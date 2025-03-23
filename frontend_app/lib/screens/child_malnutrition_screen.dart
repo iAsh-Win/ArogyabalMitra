@@ -15,7 +15,7 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
   final TextEditingController _muacController = TextEditingController();
   final TextEditingController _mealFrequencyController = TextEditingController();
   
-  Map<String, Map<String, dynamic>> _foodIntake = {
+  final Map<String, Map<String, dynamic>> _foodIntake = {
     "Dairy": {
       "Milk": {"value": 0.0, "unit": "ml"},
       "Curd": {"value": 0.0, "unit": "ml"},
@@ -46,7 +46,7 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
   
   int _dietaryDiversityScore = 4;
   bool _hasCleanWater = true;
-  List<String> _selectedIllnesses = [];
+  final List<String> _selectedIllnesses = [];
   String _nutritionalStatus = '';
 
   final List<String> _illnessList = [
@@ -267,9 +267,9 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
                       ),
                     ],
                   ),
-                )).toList(),
+                )),
               ],
-            )).toList(),
+            )),
           ],
         ),
       ),

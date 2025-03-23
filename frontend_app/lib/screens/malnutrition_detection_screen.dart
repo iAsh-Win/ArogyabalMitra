@@ -12,10 +12,10 @@ class _MalnutritionDetectionScreenState extends State<MalnutritionDetectionScree
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _muacController = TextEditingController();
-  String _nutritionalStatus = '';
+  final String _nutritionalStatus = '';
   String? _selectedChildId;
 
-  List<Map<String, dynamic>> _children = [
+  final List<Map<String, dynamic>> _children = [
     {
       'id': '1',
       'name': 'John Doe',

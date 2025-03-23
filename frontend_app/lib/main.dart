@@ -24,7 +24,6 @@ class MyApp extends StatelessWidget {
           secondary: const Color(0xFF90A4AE),
           tertiary: const Color(0xFFB0BEC5),
           surface: Colors.white,
-          background: const Color(0xFFF5F5F5),
           error: const Color(0xFFE57373),
         ),
         textTheme: GoogleFonts.interTextTheme().copyWith(

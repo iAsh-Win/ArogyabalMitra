@@ -16,9 +16,9 @@ class _VaccinationDataScreenState extends State<VaccinationDataScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
-Map<DateTime, List<VaccineSchedule>> _events = {};
+final Map<DateTime, List<VaccineSchedule>> _events = {};
   int? _selectedChildId;
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   
   // TODO: Replace with actual database query
   Future<List<Map<String, dynamic>>> _fetchRegisteredChildren() async {
@@ -406,7 +406,7 @@ Map<DateTime, List<VaccineSchedule>> _events = {};
     ],
   };
 
-  String _selectedAgeGroup = '1-1.5 Years';
+  final String _selectedAgeGroup = '1-1.5 Years';
   String? _selectedVaccine;
 
   void _showAddVaccinationDialog() {
