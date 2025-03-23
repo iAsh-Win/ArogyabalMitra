@@ -6,39 +6,44 @@ from django.core.exceptions import ObjectDoesNotExist
 from ..models import AnganwadiUser, Child
 import uuid
 
-# 🔹 Create Child (Protected)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_child(request):
     try:
         data = request.data
-        anganwadi_user = AnganwadiUser.objects.get(id=data.get("anganwadi_user_id"))
+        anganwadi_user = AnganwadiUser.objects.get(id=request.user.id)  # Ensure correct user ID is fetched
+
         child_id = uuid.uuid4()
 
+        # Create the child instance
         child = Child.objects.create(
             id=child_id,
             anganwadi_user=anganwadi_user,
             full_name=data.get("full_name"),
             birth_date=data.get("birth_date"),
             gender=data.get("gender"),
-            aadhaar_number=data.get("aadhaar_number"),
+            aadhaar_number=data.get("aadhaar_number", None),  # Allow empty Aadhaar number
             village=data.get("village"),
-            society_name=data.get("society_name"),
+            society_name=data.get("society_name", None),  # Allow empty society name
             district=data.get("district"),
             state=data.get("state"),
             pin_code=data.get("pin_code"),
             father_name=data.get("father_name"),
-            father_contact=data.get("father_contact"),
+            father_contact=data.get("father_contact", None),  # Allow empty father contact
             mother_name=data.get("mother_name"),
-            parent_aadhaar_number=data.get("parent_aadhaar_number")
+            parent_aadhaar_number=data.get("parent_aadhaar_number", None)  # Allow empty parent Aadhaar number
         )
 
         return Response({"message": "Child created successfully", "id": child.id}, status=status.HTTP_201_CREATED)
+    
     except ObjectDoesNotExist:
-        return Response({"error": "Anganwadi User not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "Anganwadi User not found"}, status=status.HTTP_404_NOT_FOUND)
+    
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
 
+    
 # 🔹 Retrieve All Children (Protected)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -69,7 +74,7 @@ def get_child(request, child_id):
             "parent_aadhaar_number": child.parent_aadhaar_number
         }, status=status.HTTP_200_OK)
     except ObjectDoesNotExist:
-        return Response({"error": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
 
 # 🔹 Delete Child (Protected)
 @api_view(['DELETE'])
@@ -80,7 +85,7 @@ def delete_child(request, child_id):
         child.delete()
         return Response({"message": "Child deleted successfully", "id": child_id}, status=status.HTTP_200_OK)
     except ObjectDoesNotExist:
-        return Response({"error": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
     
     
 # 🔹 Update Child (Protected)
@@ -111,6 +116,6 @@ def update_child(request, child_id):
         return Response({"message": "Child updated successfully", "id": child.id}, status=status.HTTP_200_OK)
 
     except ObjectDoesNotExist:
-        return Response({"error": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)

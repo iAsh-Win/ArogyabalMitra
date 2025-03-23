@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,8 +12,34 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _rememberMe = false;
+  bool _isLoading = false;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  late final AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAuthService();
+    _printSharedPreferencesData();
+  }
+
+  Future<void> _initializeAuthService() async {
+    _authService = await AuthService.create();
+  }
+
+  void _printSharedPreferencesData() async {
+    print('Printing SharedPreferences data');
+    final prefs = await SharedPreferences.getInstance();
+
+    // Get all keys
+    Set<String> keys = prefs.getKeys();
+
+    // Iterate and print each key-value pair
+    for (String key in keys) {
+      print('$key: ${prefs.get(key)}');
+    }
+  }
 
   @override
   void dispose() {
@@ -20,10 +48,57 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement login logic
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final result = await _authService.login(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+
+        if (result['success']) {
+          if (!mounted) return;
+          // Navigate to home and remove all previous routes
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/home',
+            (route) => false,
+          );
+        } else {
+          if (!mounted) return;
+          _showErrorDialog(result['message']);
+        }
+      } catch (e) {
+        if (!mounted) return;
+        _showErrorDialog('An error occurred. Please try again.');
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Login Failed'),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+    );
   }
 
   @override
@@ -73,6 +148,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Please enter your email';
                             }
+                            if (!value.contains('@')) {
+                              return 'Please enter a valid email address';
+                            }
                             return null;
                           },
                         ),
@@ -91,6 +169,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter your password';
+                            }
+                            if (value.length < 4) {
+                              return 'Password must be at least 4 characters';
                             }
                             return null;
                           },
@@ -122,18 +203,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      Navigator.of(context).pushReplacementNamed('/home');
-                    }
-                  },
+                  onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text(
-                    'Login',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Text('Login', style: TextStyle(fontSize: 16)),
                 ),
                 const SizedBox(height: 16),
               ],

@@ -1,4 +1,4 @@
-name: aarogya_balmitra
+name: AarogyaBalmitra
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -37,6 +37,9 @@ dependencies:
   google_fonts: ^6.1.0
   provider: ^6.1.1
   table_calendar: ^3.2.0
+  http: ^1.2.0
+  shared_preferences: ^2.2.2
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:

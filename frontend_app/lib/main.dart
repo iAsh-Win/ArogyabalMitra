@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/children_registration_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,13 +19,7 @@ class MyApp extends StatelessWidget {
       title: 'Aarogya Balmitra',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.light(
-          primary: const Color(0xFF546E7A),
-          secondary: const Color(0xFF90A4AE),
-          tertiary: const Color(0xFFB0BEC5),
-          surface: Colors.white,
-          error: const Color(0xFFE57373),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         textTheme: GoogleFonts.interTextTheme().copyWith(
           headlineLarge: GoogleFonts.inter(
             fontSize: 32,
@@ -96,6 +90,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
+        '/children-registration': (context) => const ChildrenRegistrationScreen(),
       },
     );
   }

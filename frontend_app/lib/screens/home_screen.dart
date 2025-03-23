@@ -3,6 +3,7 @@ import 'children_registration_screen.dart';
 import 'vaccination_data_screen.dart';
 import 'inventory_management_screen.dart';
 import 'malnutrition_detection_screen.dart';
+import '../services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +14,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _todayRegistered = 0;
+  late final AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAuthService();
+  }
+
+  Future<void> _initializeAuthService() async {
+    _authService = await AuthService.create();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +43,15 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.person_outline),
             onPressed: () {
               // TODO: Implement profile view
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await _authService.logout();
+              if (context.mounted) {
+                Navigator.of(context).pushReplacementNamed('/login');
+              }
             },
           ),
         ],

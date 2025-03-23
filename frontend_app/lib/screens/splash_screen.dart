@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
+import '../services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,10 +12,12 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
+  late final AuthService _authService;
 
   @override
   void initState() {
     super.initState();
+    _initializeAuthService();
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -28,17 +30,33 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _animationController.forward();
 
-    Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+    // Check auth status after animation
+    Timer(const Duration(seconds: 2), () {
+      _checkAuthStatus();
     });
+  }
+
+  Future<void> _initializeAuthService() async {
+    _authService = await AuthService.create();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    final token = await _authService.getToken();
+    if (!mounted) return;
+
+    if (token != null) {
+      // Token exists, navigate to home
+      Navigator.of(context).pushReplacementNamed('/home');
+    } else {
+      // No token, navigate to login
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
   }
 
   @override

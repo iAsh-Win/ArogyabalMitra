@@ -15,6 +15,12 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+    # execute_from_command_line(sys.argv)
+    
+    # Add this block to set default host and port
+    if len(sys.argv) == 2 and sys.argv[1] == "runserver":
+        sys.argv += ["192.168.133.63:8000"]  # Set default host and port
+
     execute_from_command_line(sys.argv)
 
 

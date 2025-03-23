@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../services/auth_service.dart';
+import '../config/api_config.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ChildrenRegistrationScreen extends StatefulWidget {
   const ChildrenRegistrationScreen({super.key});
@@ -9,101 +14,136 @@ class ChildrenRegistrationScreen extends StatefulWidget {
 
 class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
-  final _aadharController = TextEditingController();
-  final _permanentAddressController = TextEditingController();
-  final _currentAddressController = TextEditingController();
-  final _fatherNameController = TextEditingController();
-  final _motherNameController = TextEditingController();
-  final _guardianNameController = TextEditingController();
-  final _parentContactController = TextEditingController();
-  final _parentAadharController = TextEditingController();
-  final _emergencyContactController = TextEditingController();
-  DateTime? _dateOfBirth;
-  String _gender = 'Male';
-  String _bloodGroup = 'A+';
-  bool _sameAsPermAddress = false;
+  late final AuthService _authService;
+  bool _isLoading = false;
 
-  final List<String> _bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-  final List<String> _genderOptions = ['Male', 'Female', 'Other'];
+  // Controllers for all fields
+  final _fullNameController = TextEditingController();
+  final _aadhaarNumberController = TextEditingController();
+  final _villageController = TextEditingController();
+  final _societyNameController = TextEditingController();
+  final _districtController = TextEditingController();
+  final _stateController = TextEditingController();
+  final _pinCodeController = TextEditingController();
+  final _fatherNameController = TextEditingController();
+  final _fatherContactController = TextEditingController();
+  final _motherNameController = TextEditingController();
+  final _parentAadhaarNumberController = TextEditingController();
+
+  DateTime? _selectedDate;
+  String? _selectedGender;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAuthService();
+  }
+
+  Future<void> _initializeAuthService() async {
+    _authService = await AuthService.create();
+  }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _ageController.dispose();
-    _aadharController.dispose();
-    _permanentAddressController.dispose();
-    _currentAddressController.dispose();
+    _fullNameController.dispose();
+    _aadhaarNumberController.dispose();
+    _villageController.dispose();
+    _societyNameController.dispose();
+    _districtController.dispose();
+    _stateController.dispose();
+    _pinCodeController.dispose();
     _fatherNameController.dispose();
+    _fatherContactController.dispose();
     _motherNameController.dispose();
-    _guardianNameController.dispose();
-    _parentContactController.dispose();
-    _parentAadharController.dispose();
-    _emergencyContactController.dispose();
+    _parentAadhaarNumberController.dispose();
     super.dispose();
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final now = DateTime.now();
-    final minDate = now.subtract(const Duration(days: 365 * 5)); // 5 years ago
-    final maxDate = now.subtract(const Duration(days: 365)); // 1 year ago
-
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: maxDate,
-      firstDate: minDate,
-      lastDate: maxDate,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
     );
-    if (picked != null && picked != _dateOfBirth) {
+    if (picked != null && picked != _selectedDate) {
       setState(() {
-        _dateOfBirth = picked;
-        // Calculate age
-        final age = now.year - picked.year - 
-          (now.month > picked.month || 
-          (now.month == picked.month && now.day >= picked.day) ? 0 : 1);
-        _ageController.text = age.toString();
+        _selectedDate = picked;
       });
     }
   }
 
-  void _handleRegistration() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      if (_dateOfBirth == null) {
+      if (_selectedDate == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select date of birth')),
+          const SnackBar(content: Text('Please select birth date')),
         );
         return;
       }
 
-      // Create registration data
-      final registrationData = {
-        'name': _nameController.text,
-        'dateOfBirth': _dateOfBirth!.toIso8601String(),
-        'age': _ageController.text,
-        'gender': _gender,
-        'bloodGroup': _bloodGroup,
-        'aadharNumber': _aadharController.text,
-        'permanentAddress': _permanentAddressController.text,
-        'currentAddress': _currentAddressController.text,
-        'fatherName': _fatherNameController.text,
-        'motherName': _motherNameController.text,
-        'guardianName': _guardianNameController.text,
-        'parentContact': _parentContactController.text,
-        'parentAadhar': _parentAadharController.text,
-        'emergencyContact': _emergencyContactController.text,
-        'registrationDate': DateTime.now().toIso8601String(),
-      };
+      if (_selectedGender == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select gender')),
+        );
+        return;
+      }
 
-      // TODO: Save registration data to database
-      
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration successful')),
-      );
+      setState(() {
+        _isLoading = true;
+      });
 
-      // Navigate back to previous screen with registration data
-      Navigator.of(context).pop(true);
+      try {
+        final token = await _authService.getToken();
+        if (token == null) {
+          throw Exception('Authentication token not found');
+        }
+
+        final response = await http.post(
+          Uri.parse(ApiConfig.childrenCreate),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: json.encode({
+            'full_name': _fullNameController.text.trim(),
+            'birth_date': DateFormat('yyyy-MM-dd').format(_selectedDate!),
+            'gender': _selectedGender,
+            'aadhaar_number': _aadhaarNumberController.text.trim(),
+            'village': _villageController.text.trim(),
+            'society_name': _societyNameController.text.trim(),
+            'district': _districtController.text.trim(),
+            'state': _stateController.text.trim(),
+            'pin_code': _pinCodeController.text.trim(),
+            'father_name': _fatherNameController.text.trim(),
+            'father_contact': _fatherContactController.text.trim(),
+            'mother_name': _motherNameController.text.trim(),
+            'parent_aadhaar_number': _parentAadhaarNumberController.text.trim(),
+          }),
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Child registered successfully!')),
+          );
+          Navigator.of(context).pop(true);
+        } else {
+          final error = json.decode(response.body);
+          throw Exception(error['message'] ?? 'Failed to register child');
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -111,295 +151,240 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Children Registration'),
-        elevation: 0,
+        title: const Text('Child Registration'),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                Text(
-                  'Basic Information',
-                  style: Theme.of(context).textTheme.titleLarge,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _fullNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Basic Information',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _nameController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter full name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () => _selectDate(context),
+                child: InputDecorator(
                   decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: Icon(Icons.person),
-                    hintText: 'Enter child\'s full name',
+                    labelText: 'Birth Date',
+                    border: OutlineInputBorder(),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter child\'s name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton.icon(
-                        onPressed: () => _selectDate(context),
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(
-                          _dateOfBirth == null
-                              ? 'Select Date of Birth'
-                              : 'DoB: ${_dateOfBirth.toString().split(' ')[0]}',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _ageController,
-                        enabled: false,
-                        decoration: const InputDecoration(
-                          labelText: 'Age (Years)',
-                          prefixIcon: Icon(Icons.cake),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _gender,
-                        decoration: const InputDecoration(
-                          labelText: 'Gender',
-                          prefixIcon: Icon(Icons.person_outline),
-                        ),
-                        items: _genderOptions.map((String gender) {
-                          return DropdownMenuItem<String>(
-                            value: gender,
-                            child: Text(gender),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              _gender = newValue;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _bloodGroup,
-                        decoration: const InputDecoration(
-                          labelText: 'Blood Group',
-                          prefixIcon: Icon(Icons.bloodtype),
-                        ),
-                        items: _bloodGroups.map((String group) {
-                          return DropdownMenuItem<String>(
-                            value: group,
-                            child: Text(group),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              _bloodGroup = newValue;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _aadharController,
-                  decoration: const InputDecoration(
-                    labelText: 'Aadhar Number (Optional)',
-                    prefixIcon: Icon(Icons.credit_card),
-                  ),
-                  keyboardType: TextInputType.number,
-                  maxLength: 12,
-                  validator: (value) {
-                    if (value != null && value.isNotEmpty && value.length != 12) {
-                      return 'Aadhar number must be 12 digits';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _permanentAddressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Permanent Address',
-                    prefixIcon: Icon(Icons.home),
-                  ),
-                  maxLines: 2,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter permanent address';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _sameAsPermAddress,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          _sameAsPermAddress = value ?? false;
-                          if (_sameAsPermAddress) {
-                            _currentAddressController.text = _permanentAddressController.text;
-                          }
-                        });
-                      },
-                    ),
-                    const Text('Same as Permanent Address'),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _currentAddressController,
-                  enabled: !_sameAsPermAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Current Address',
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
-                  maxLines: 2,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter current address';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Parent/Guardian Details',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _fatherNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Father\'s Name',
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter father\'s name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _motherNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Mother\'s Name',
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter mother\'s name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _guardianNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Guardian\'s Name (if applicable)',
-                    prefixIcon: Icon(Icons.person_outline),
+                  child: Text(
+                    _selectedDate == null
+                        ? 'Select Date'
+                        : DateFormat('dd/MM/yyyy').format(_selectedDate!),
                   ),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _parentContactController,
-                  decoration: const InputDecoration(
-                    labelText: 'Parent\'s Contact Number',
-                    prefixIcon: Icon(Icons.phone),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter parent\'s contact number';
-                    }
-                    return null;
-                  },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedGender,
+                decoration: const InputDecoration(
+                  labelText: 'Gender',
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _parentAadharController,
-                  decoration: const InputDecoration(
-                    labelText: 'Parent\'s Aadhar Number',
-                    prefixIcon: Icon(Icons.credit_card),
-                  ),
-                  keyboardType: TextInputType.number,
-                  maxLength: 12,
-                  validator: (value) {
-                    if (value != null && value.isNotEmpty && value.length != 12) {
-                      return 'Aadhar number must be 12 digits';
-                    }
-                    return null;
-                  },
+                items: const [
+                  DropdownMenuItem(value: 'Male', child: Text('Male')),
+                  DropdownMenuItem(value: 'Female', child: Text('Female')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedGender = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select gender';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _aadhaarNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Aadhaar Number',
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _emergencyContactController,
-                  decoration: const InputDecoration(
-                    labelText: 'Emergency Contact Number',
-                    prefixIcon: Icon(Icons.emergency),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter emergency contact number';
-                    }
-                    return null;
-                  },
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter Aadhaar number';
+                  }
+                  if (value.length != 12) {
+                    return 'Aadhaar number must be 12 digits';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _villageController,
+                decoration: const InputDecoration(
+                  labelText: 'Village',
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _handleRegistration,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.all(16),
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Register Child'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter village';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _societyNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Society Name',
+                  border: OutlineInputBorder(),
                 ),
-              ]
-            )
-          )
-        )
-              ]
-      )
-          )
-        )
-      )
-              );
-           
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter society name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _districtController,
+                decoration: const InputDecoration(
+                  labelText: 'District',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter district';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _stateController,
+                decoration: const InputDecoration(
+                  labelText: 'State',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter state';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _pinCodeController,
+                decoration: const InputDecoration(
+                  labelText: 'PIN Code',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter PIN code';
+                  }
+                  if (value.length != 6) {
+                    return 'PIN code must be 6 digits';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _fatherNameController,
+                decoration: const InputDecoration(
+                  labelText: "Father's Name",
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter father's name";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _fatherContactController,
+                decoration: const InputDecoration(
+                  labelText: "Father's Contact",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter father's contact";
+                  }
+                  if (value.length != 10) {
+                    return 'Contact number must be 10 digits';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _motherNameController,
+                decoration: const InputDecoration(
+                  labelText: "Mother's Name",
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter mother's name";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _parentAadhaarNumberController,
+                decoration: const InputDecoration(
+                  labelText: "Parent's Aadhaar Number",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Please enter parent's Aadhaar number";
+                  }
+                  if (value.length != 12) {
+                    return 'Aadhaar number must be 12 digits';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submitForm,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Register Child'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
