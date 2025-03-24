@@ -20,10 +20,27 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initializeAuthService();
+    _checkAuthStatus();
   }
 
   Future<void> _initializeAuthService() async {
     _authService = await AuthService.create();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    try {
+      final token = await _authService.getToken();
+      if (!mounted) return;
+
+      if (token == null || token.isEmpty) {
+        // No token or empty token, navigate to login
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      // If there's any error checking token, go to login
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
   }
 
   @override

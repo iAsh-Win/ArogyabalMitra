@@ -106,17 +106,40 @@ class HealthRecord(models.Model):
         return f"{self.child.full_name} - {self.nutritional_status}"
 
 
+
+
+# Supplement Model
+class Supplement(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)  # Add UUID primary key
+    name = models.CharField(max_length=255, unique=True)  # Name of the supplement
+    description = models.TextField(null=True, blank=True)  # Optional description
+    unit = models.CharField(max_length=50, default="units")  # Unit of measurement (e.g., bottles, sachets)
+
+    def __str__(self):
+        return self.name
+
+
+# Anganwadi Supplement Model
+class AnganwadiSupplement(models.Model):
+    anganwadi_user = models.ForeignKey(AnganwadiUser, on_delete=models.CASCADE)  # Link to Anganwadi user
+    supplement = models.ForeignKey(Supplement, on_delete=models.CASCADE)  # Link to the supplement
+    quantity = models.PositiveIntegerField(default=0)  # Quantity of the supplement available
+    
+    def __str__(self):
+        return f"{self.anganwadi_user.email} - {self.supplement.name} ({self.quantity} {self.supplement.unit})"
+
+
 # Supplement Distribution Model
 class SupplementDistribution(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
     child = models.ForeignKey(Child, on_delete=models.CASCADE)  # Which child received the supplement
     distributed_by = models.ForeignKey(AnganwadiUser, on_delete=models.CASCADE)  # Anganwadi worker who provided it
-    supplement_name = models.CharField(max_length=255)
-    quantity = models.CharField(max_length=50)  # e.g., "200g", "5 Tablets"
+    supplement = models.ForeignKey(Supplement, on_delete=models.CASCADE)  # Link to the Supplement model
+    quantity = models.PositiveIntegerField()  # Quantity of the supplement distributed
     distribution_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "supplement_distribution"
 
     def __str__(self):
-        return f"{self.supplement_name} - {self.child.full_name}"
+        return f"{self.supplement.name} - {self.child.full_name} ({self.quantity} {self.supplement.unit})"

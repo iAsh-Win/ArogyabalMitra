@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/children_registration_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Aarogya Balmitra',
+      title: 'AarogyaBalmitra',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
@@ -90,7 +89,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
-        '/children-registration': (context) => const ChildrenRegistrationScreen(),
+        // '/children-registration': (context) => const ChildrenRegistrationScreen(),
       },
     );
   }

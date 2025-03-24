@@ -37,10 +37,27 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
   void initState() {
     super.initState();
     _initializeAuthService();
+    _checkAuthStatus();
   }
 
   Future<void> _initializeAuthService() async {
     _authService = await AuthService.create();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    try {
+      final token = await _authService.getToken();
+      if (!mounted) return;
+
+      if (token == null || token.isEmpty) {
+        // No token or empty token, navigate to login
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      // If there's any error checking token, go to login
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
   }
 
   @override
@@ -95,8 +112,10 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
 
       try {
         final token = await _authService.getToken();
-        if (token == null) {
-          throw Exception('Authentication token not found');
+        if (token == null || token.isEmpty) {
+          if (!mounted) return;
+          Navigator.of(context).pushReplacementNamed('/login');
+          return;
         }
 
         final response = await http.post(

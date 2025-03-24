@@ -111,9 +111,29 @@ def update_child(request, child_id):
         child.mother_name = data.get("mother_name", child.mother_name)
         child.parent_aadhaar_number = data.get("parent_aadhaar_number", child.parent_aadhaar_number)
 
+        # Save the updated child instance
         child.save()
 
-        return Response({"message": "Child updated successfully", "id": child.id}, status=status.HTTP_200_OK)
+        # Return the updated child data
+        return Response({
+            "message": "Child updated successfully",
+            "child": {
+                "id": child.id,
+                "full_name": child.full_name,
+                "birth_date": child.birth_date,
+                "gender": child.gender,
+                "aadhaar_number": child.aadhaar_number,
+                "village": child.village,
+                "society_name": child.society_name,
+                "district": child.district,
+                "state": child.state,
+                "pin_code": child.pin_code,
+                "father_name": child.father_name,
+                "father_contact": child.father_contact,
+                "mother_name": child.mother_name,
+                "parent_aadhaar_number": child.parent_aadhaar_number
+            }
+        }, status=status.HTTP_200_OK)
 
     except ObjectDoesNotExist:
         return Response({"message": "Child not found"}, status=status.HTTP_404_NOT_FOUND)

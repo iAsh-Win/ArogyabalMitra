@@ -1,0 +1,64 @@
+Food Item (English),Food Item (Hindi),Nutrient per 100g (g),Protein,Vitamin A,Iron,Carbohydrates
+Eggs (boiled),उबले अंडे,13.3,1,0,0,0
+Chicken (cooked),पका हुआ चिकन,25,1,0,0,0
+Paneer (cottage cheese),पनीर,18.3,1,0,0,0
+Tofu,टोफू,8.1,1,0,0,0
+Chickpeas (cooked),पके हुए चने,8.9,1,0,0,0
+Curd (yogurt),दही,3.1,1,0,0,0
+Almonds,बादाम,21.2,1,0,0,0
+Peanuts,मूंगफली,25.2,1,0,0,0
+Milk (cow's),गाय का दूध,3.2,1,0,0,0
+Green Peas (cooked),पकी हुई हरी मटर,5.4,1,0,0,0
+Quinoa (cooked),पका हुआ क्विनोआ,4.4,1,0,0,0
+Oats (cooked),पके हुए जई,2.5,1,0,0,0
+Soybeans (cooked),पकी हुई सोयाबीन,16.6,1,0,0,0
+Chia Seeds,चिया के बीज,16.5,1,0,0,0
+Pumpkin Seeds,कद्दू के बीज,19,1,0,0,0
+Carrots,गाजर,0.000835,0,1,0,0
+Sweet Potatoes,शकरकंद,0.000709,0,1,0,0
+Spinach,पालक,0.000469,0,1,0,0
+Pumpkin,कद्दू,0.000426,0,1,0,0
+Mango,आम,0.000054,0,1,0,0
+Tomatoes,टमाटर,0.000042,0,1,0,0
+Red Bell Peppers,लाल शिमला मिर्च,0.000157,0,1,0,0
+Eggs (boiled),उबले अंडे,0.000149,0,1,0,0
+Broccoli,ब्रोकोली,0.000031,0,1,0,0
+Cantaloupe,खरबूजा,0.000169,0,1,0,0
+Drumstick Leaves,सहजन के पत्ते,0.000756,0,1,0,0
+Curry Leaves,कड़ी पत्ता,0.000206,0,1,0,0
+Fenugreek Leaves,मेथी के पत्ते,0.000234,0,1,0,0
+Gooseberry,आंवला,0.00005,0,1,0,0
+Watermelon,तरबूज,0.000028,0,1,0,0
+Milk (cow's),गाय का दूध,0.000046,0,1,0,0
+Spinach,पालक,0.0027,0,0,1,0
+Beetroot,चुकंदर,0.0008,0,0,1,0
+Chickpeas (cooked),पके हुए चने,0.0029,0,0,1,0
+Dates,खजूर,0.001,0,0,1,0
+Cashews,काजू,0.0067,0,0,1,0
+Almonds,बादाम,0.0053,0,0,1,0
+Pumpkin Seeds,कद्दू के बीज,0.0088,0,0,1,0
+Pomegranate,अनार,0.0003,0,0,1,0
+Ragi (finger millet),रागी,0.0039,0,0,1,0
+Whole Wheat Flour,गेहूं का आटा,0.0039,0,0,1,0
+Fenugreek Seeds,मेथी दाना,0.033,0,0,1,0
+Black Sesame Seeds,काला तिल,0.0146,0,0,1,0
+Chicken Liver (cooked),पका हुआ चिकन लीवर,0.009,0,0,1,0
+Quinoa (cooked),पका हुआ क्विनोआ,0.0015,0,0,1,0
+Tofu,टोफू,0.0054,0,0,1,0
+Soybeans (cooked),पकी हुई सोयाबीन,0.0051,0,0,1,0
+Green Peas (cooked),पकी हुई हरी मटर,0.0015,0,0,1,0
+Rice (cooked),पके हुए चावल,28,0,0,0,1
+Whole Wheat Chapati,गेहूं की चपाती,49,0,0,0,1
+Potatoes (boiled),उबले आलू,17,0,0,0,1
+Sweet Potatoes (boiled),उबले शकरकंद,20,0,0,0,1
+Bananas,केला,23,0,0,0,1
+Oats (cooked),पके हुए जई,12,0,0,0,1
+Poha (flattened rice),पोहा,75,0,0,0,1
+Sago (sabudana),साबूदाना,85,0,0,0,1
+Honey,शहद,82,0,0,0,1
+Quinoa (cooked),पका हुआ क्विनोआ,21.3,0,0,0,1
+Ragi (finger millet),रागी,72,0,0,0,1
+Barley (cooked),पका हुआ जौ,28.2,0,0,0,1
+Bajra (pearl millet),बाजरा,67,0,0,0,1
+Semolina (rawa),सूजी,73,0,0,0,1
+Whole Wheat Bread,संपूर्ण गेहूं की ब्रेड,49,0,0,0,1

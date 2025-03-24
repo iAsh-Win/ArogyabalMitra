@@ -47,14 +47,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Future<void> _checkAuthStatus() async {
-    final token = await _authService.getToken();
-    if (!mounted) return;
-
-    if (token != null) {
-      // Token exists, navigate to home
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else {
-      // No token, navigate to login
+    try {
+      final token = await _authService.getToken();
+      if (!mounted) return;
+      if (token == null || token.isEmpty) {
+        // No token or empty token, navigate to login
+        Navigator.of(context).pushReplacementNamed('/login');
+      } else {
+        // Valid token exists, navigate to home
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      // If there's any error checking token, go to login
       Navigator.of(context).pushReplacementNamed('/login');
     }
   }

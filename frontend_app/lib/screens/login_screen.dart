@@ -67,6 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
             '/home',
             (route) => false,
           );
+          print('Login successful');
         } else {
           if (!mounted) return;
           _showErrorDialog(result['message']);
