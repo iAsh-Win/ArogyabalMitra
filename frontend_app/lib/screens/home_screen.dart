@@ -4,6 +4,8 @@ import 'vaccination_data_screen.dart';
 import 'inventory_management_screen.dart';
 import 'malnutrition_detection_screen.dart';
 import '../services/auth_service.dart';
+import 'report_screen.dart';
+import 'children_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -57,9 +59,63 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.person_outline),
+            icon: CircleAvatar(
+              radius: 16,
+              backgroundImage: const AssetImage('assets/default_profile.png'),
+            ),
             onPressed: () {
-              // TODO: Implement profile view
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return Dialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundImage: AssetImage('assets/default_profile.png'),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Priya Sharma',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Health Worker',
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          ListTile(
+                            leading: const Icon(Icons.email_outlined),
+                            title: const Text('priya.sharma@health.gov.in'),
+                            dense: true,
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.location_on_outlined),
+                            title: const Text('Primary Health Center, Delhi'),
+                            dense: true,
+                          ),
+                          const SizedBox(height: 20),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Close'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
             },
           ),
           IconButton(
@@ -285,6 +341,19 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => const MalnutritionDetectionScreen(),
+              ),
+            );
+          },
+        ),
+        _buildFeatureCard(
+          context,
+          'Health Reports',
+          Icons.assessment_outlined,
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ChildrenListScreen(),
               ),
             );
           },

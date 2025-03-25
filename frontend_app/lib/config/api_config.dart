@@ -7,5 +7,6 @@ class ApiConfig {
   // Children endpoints
   static const String childrenCreate = '$baseUrl/anganwadi/children/create';
   
+  static const String getfood = '$baseUrl/anganwadi/getfood';
   // Add other API endpoints here as needed
 } 

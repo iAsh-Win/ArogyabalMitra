@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'report_screen.dart';
 class ChildMalnutritionScreen extends StatefulWidget {
   final Map<String, dynamic> childData;
 
@@ -16,31 +16,12 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
   final TextEditingController _mealFrequencyController = TextEditingController();
   
   final Map<String, Map<String, dynamic>> _foodIntake = {
-    "Dairy": {
-      "Milk": {"value": 0.0, "unit": "ml"},
-      "Curd": {"value": 0.0, "unit": "ml"},
-      "Buttermilk": {"value": 0.0, "unit": "ml"}
-    },
-    "Proteins": {
-      "Eggs": {"value": 0, "unit": "pieces"},
-      "Dal": {"value": 0.0, "unit": "g"},
-      "Paneer": {"value": 0.0, "unit": "g"}
-    },
-    "Vegetables": {
-      "Green Leafy": {"value": 0.0, "unit": "g"},
-      "Tomatoes": {"value": 0, "unit": "pieces"},
-      "Onions": {"value": 0, "unit": "pieces"},
-      "Potatoes": {"value": 0, "unit": "pieces"}
-    },
-    "Fruits": {
-      "Banana": {"value": 0, "unit": "pieces"},
-      "Apple": {"value": 0, "unit": "pieces"},
-      "Orange": {"value": 0, "unit": "pieces"}
-    },
-    "Grains": {
-      "Rice": {"value": 0.0, "unit": "g"},
-      "Roti": {"value": 0, "unit": "pieces"},
-      "Poha": {"value": 0.0, "unit": "g"}
+    "Food Intake": {
+      "items": <String>[],
+      "selectedItems": <String>[],
+      "values": <String, double>{},
+      "unit": "grams",
+      "quantity": 0.0
     }
   };
   
@@ -51,11 +32,11 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
 
   final List<String> _illnessList = [
     'Diarrhea',
-    'Fever',
-    'Cough',
-    'Cold',
-    'Malaria',
-    'Pneumonia'
+    'Respiratory Infections',
+    'Delayed Growth and Development',
+    'Skin Infections',
+    'Rickets',
+    'Scurvy'
   ];
 
   @override
@@ -63,6 +44,20 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('${widget.childData['name']}\'s Measurements'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.assessment),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ReportScreen(childData: widget.childData),
+                ),
+              );
+            },
+            tooltip: 'View Report',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -77,7 +72,7 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
             const SizedBox(height: 24),
             _buildHealthSection(),
             const SizedBox(height: 24),
-            _buildMeasurementHistory(),
+            _buildIllnessSection()
           ],
         ),
       ),
@@ -185,6 +180,18 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
   }
 
   Widget _buildFoodIntakeSection() {
+    // Combine all food items into a single list
+    List<Map<String, String>> allFoodItems = [];
+    _foodIntake.forEach((category, value) {
+      value['items'].forEach((item) {
+        allFoodItems.add({
+          'name': item,
+          'category': category,
+          'unit': value['unit'],
+        });
+      });
+    });
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -196,80 +203,107 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _mealFrequencyController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Meals per day',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Dietary Diversity Score: $_dietaryDiversityScore',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Slider(
-              value: _dietaryDiversityScore.toDouble(),
-              min: 0,
-              max: 10,
-              divisions: 10,
-              label: _dietaryDiversityScore.toString(),
-              onChanged: (value) {
-                setState(() {
-                  _dietaryDiversityScore = value.toInt();
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            ..._foodIntake.entries.map((category) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Text(
-                    category.key,
-                    style: Theme.of(context).textTheme.titleMedium,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButton<Map<String, String>>(
+                    value: null,
+                    hint: const Text('Select Food Items'),
+                    isExpanded: true,
+                    underline: Container(),
+                    items: allFoodItems.map<DropdownMenuItem<Map<String, String>>>((item) {
+                      String category = item['category'] ?? '';
+                      String foodName = item['name'] ?? '';
+                      bool isSelected = _foodIntake[category]?['selectedItems']?.contains(foodName) ?? false;
+                      
+                      return DropdownMenuItem<Map<String, String>>(
+                        value: item,
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: isSelected,
+                              onChanged: (bool? checked) {
+                                setState(() {
+                                  if (checked ?? false) {
+                                    _foodIntake[category]?['selectedItems'].add(foodName);
+                                    _foodIntake[category]?['values'][foodName] = _foodIntake[category]?['options'][0];
+                                  } else {
+                                    _foodIntake[category]?['selectedItems'].remove(foodName);
+                                    _foodIntake[category]?['values'].remove(foodName);
+                                  }
+                                });
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                            Expanded(
+                              child: Text(foodName),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (_) {},
                   ),
-                ),
-                ...category.value.entries.map((food) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(food.key),
-                      ),
-                      SizedBox(
-                        width: 100,
-                        child: TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            suffixText: food.value['unit'],
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 16),
+                  // Display selected items with quantity selectors
+                  ...allFoodItems.where((item) {
+                    String category = item['category'] ?? '';
+                    String foodName = item['name'] ?? '';
+                    return _foodIntake[category]?['selectedItems']?.contains(foodName) ?? false;
+                  }).map((item) {
+                    String category = item['category'] ?? '';
+                    String foodName = item['name'] ?? '';
+                    String unit = item['unit'] ?? '';
+                    
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(foodName),
+                                Text(
+                                  category,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          controller: TextEditingController(
-                            text: food.value['value'].toString(),
+                          SizedBox(
+                            width: 120,
+                            child: DropdownButton<dynamic>(
+                              value: _foodIntake[category]?['values'][foodName] ?? _foodIntake[category]?['options'][0],
+                              items: _foodIntake[category]?['options'].map<DropdownMenuItem<dynamic>>((value) {
+                                return DropdownMenuItem<dynamic>(
+                                  value: value,
+                                  child: Text('$value $unit'),
+                                );
+                              }).toList(),
+                              onChanged: (newValue) {
+                                setState(() {
+                                  _foodIntake[category]?['values'][foodName] = newValue;
+                                });
+                              },
+                            ),
                           ),
-                          onChanged: (value) {
-                            setState(() {
-                              _foodIntake[category.key]![food.key]!['value'] = 
-                                food.value['unit'] == 'pieces' ? 
-                                int.tryParse(value) ?? 0 : 
-                                double.tryParse(value) ?? 0.0;
-                            });
-                          },
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                )),
-              ],
-            )),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -297,14 +331,27 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
                 });
               },
             ),
-            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIllnessSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
               'Recent Illnesses',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Wrap(
-              spacing: 8.0,
+              spacing: 12.0,
+              runSpacing: 12.0,
               children: _illnessList.map((illness) => FilterChip(
                 label: Text(illness),
                 selected: _selectedIllnesses.contains(illness),
@@ -325,56 +372,6 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
     );
   }
 
-  Widget _buildMeasurementHistory() {
-    final measurements = List<Map<String, dynamic>>.from(widget.childData['measurements']);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Measurement History',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            if (measurements.isEmpty)
-              const Center(
-                child: Text('No measurements recorded yet'),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: measurements.length,
-                itemBuilder: (context, index) {
-                  final measurement = measurements[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8.0),
-                    child: ListTile(
-                      title: Text(
-                        'Date: ${DateTime.parse(measurement['date']).toString().split('.')[0]}',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Height: ${measurement['height']} cm'),
-                          Text('Weight: ${measurement['weight']} kg'),
-                          Text('MUAC: ${measurement['muac']} cm'),
-                          Text('Status: ${measurement['status']}'),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _calculateNutritionalStatus() {
     if (_heightController.text.isEmpty ||
