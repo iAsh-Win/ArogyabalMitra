@@ -10,25 +10,46 @@ class InventoryManagementScreen extends StatefulWidget {
 class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
   final List<InventoryItem> _inventoryItems = [
     InventoryItem(
-      name: 'Vaccines',
+      name: 'Balbhog',
       quantity: 100,
-      unit: 'doses',
-      category: 'Medical',
-      expiryDate: DateTime.now().add(const Duration(days: 180)),
+      unit: 'packets',
+      category: 'Nutritional Supplements',
     ),
     InventoryItem(
-      name: 'Syringes',
-      quantity: 500,
-      unit: 'pieces',
-      category: 'Equipment',
-      expiryDate: DateTime.now().add(const Duration(days: 365)),
+      name: 'Iron-Folic Acid syrup',
+      quantity: 150,
+      unit: 'bottles',
+      category: 'Nutritional Supplements',
     ),
     InventoryItem(
-      name: 'Vitamin A',
+      name: 'Poshan Sachet (MNP)',
+      quantity: 300,
+      unit: 'sachets',
+      category: 'Nutritional Supplements',
+    ),
+    InventoryItem(
+      name: 'DFS Namak',
       quantity: 200,
-      unit: 'tablets',
-      category: 'Supplements',
-      expiryDate: DateTime.now().add(const Duration(days: 90)),
+      unit: 'kg',
+      category: 'Fortified Foods',
+    ),
+    InventoryItem(
+      name: 'Vitamin A syrup',
+      quantity: 100,
+      unit: 'bottles',
+      category: 'Nutritional Supplements',
+    ),
+    InventoryItem(
+      name: 'Bal Amrit / Bal Shakti',
+      quantity: 150,
+      unit: 'packets',
+      category: 'Nutritional Supplements',
+    ),
+    InventoryItem(
+      name: 'Protein powder',
+      quantity: 100,
+      unit: 'packets',
+      category: 'Nutritional Supplements',
     ),
   ];
 
@@ -50,12 +71,6 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
             ],
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Implement add new inventory item
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -84,11 +99,6 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
                   'Low Stock',
                   '2',
                   Icons.warning_amber_outlined,
-                ),
-                _buildOverviewCard(
-                  'Expiring Soon',
-                  '3',
-                  Icons.schedule,
                 ),
               ],
             ),
@@ -126,21 +136,9 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Inventory Items',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            TextButton.icon(
-              onPressed: () {
-                // TODO: Implement filter/sort functionality
-              },
-              icon: const Icon(Icons.filter_list),
-              label: const Text('Filter'),
-            ),
-          ],
+        Text(
+          'Inventory Items',
+          style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 16),
         ListView.builder(
@@ -158,13 +156,7 @@ class _InventoryManagementScreenState extends State<InventoryManagementScreen> {
                 ),
                 title: Text(item.name),
                 subtitle: Text(
-                  '${item.quantity} ${item.unit} - ${item.category}\nExpires: ${item.expiryDate.toString().split(' ')[0]}',
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () {
-                    // TODO: Implement edit functionality
-                  },
+                  '${item.quantity} ${item.unit} - ${item.category}',
                 ),
               ),
             );
@@ -180,13 +172,11 @@ class InventoryItem {
   final int quantity;
   final String unit;
   final String category;
-  final DateTime expiryDate;
 
   InventoryItem({
     required this.name,
     required this.quantity,
     required this.unit,
     required this.category,
-    required this.expiryDate,
   });
 }

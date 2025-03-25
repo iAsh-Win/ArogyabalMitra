@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'http://192.168.133.63:8000/api';
+  static const String baseUrl = 'http://172.16.11.177:8000/api';
   
   // Auth endpoints
   static const String login = '$baseUrl/anganwadi/login';
@@ -7,5 +7,6 @@ class ApiConfig {
   // Children endpoints
   static const String childrenCreate = '$baseUrl/anganwadi/children/create';
   
+  static const String getfood = '$baseUrl/anganwadi/getfood';
   // Add other API endpoints here as needed
 } 

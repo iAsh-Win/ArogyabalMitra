@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.1.0
   provider: ^6.1.1
-  table_calendar: ^3.2.0
+  table_calendar: 3.0.9
   http: ^1.2.0
   shared_preferences: ^2.2.2
   intl: ^0.18.1
@@ -67,6 +67,7 @@ flutter:
   assets:
     - assets/images/logo.png
     - assets/images/login_illustration.png
+    - assets/images/default_profile.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
