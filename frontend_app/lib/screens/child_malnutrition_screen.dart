@@ -16,12 +16,12 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
   final TextEditingController _mealFrequencyController = TextEditingController();
   
   final Map<String, Map<String, dynamic>> _foodIntake = {
-    "All Foods": {
-      "items": ["Milk", "Curd", "Buttermilk", "Cheese", "Yogurt", "Eggs", "Dal", "Paneer", "Chicken", "Fish", "Soya", "Green Leafy", "Tomatoes", "Onions", "Potatoes", "Carrots", "Beans", "Banana", "Apple", "Orange", "Mango", "Grapes", "Papaya", "Rice", "Roti", "Poha", "Bread", "Oats", "Quinoa"],
+    "Food Intake": {
+      "items": <String>[],
       "selectedItems": <String>[],
       "values": <String, double>{},
-      "unit": "servings",
-      "options": [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+      "unit": "grams",
+      "quantity": 0.0
     }
   };
   
