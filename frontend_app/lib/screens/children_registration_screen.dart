@@ -36,29 +36,34 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
   @override
   void initState() {
     super.initState();
-    _initializeAuthService();
-    _checkAuthStatus();
+     _initializeAndCheckAuth();
+
+  }
+
+  Future<void> _initializeAndCheckAuth() async {
+    await _initializeAuthService(); // Ensure _authService is initialized
+    await _checkAuthStatus(); // Check auth status after initialization
   }
 
   Future<void> _initializeAuthService() async {
-    _authService = await AuthService.create();
+    _authService = await AuthService.create(); // Initialize AuthService
   }
 
   Future<void> _checkAuthStatus() async {
-    try {
-      final token = await _authService.getToken();
-      if (!mounted) return;
+    final token = await _authService.getToken();
+    if (!mounted) return;
 
-      if (token == null || token.isEmpty) {
-        // No token or empty token, navigate to login
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      // If there's any error checking token, go to login
-      Navigator.of(context).pushReplacementNamed('/login');
+    if (token == null || token.isEmpty) {
+      // Redirect to login if no token is found
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+      });
     }
+    print('Token: $token');
   }
+
 
   @override
   void dispose() {
@@ -149,6 +154,7 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
           Navigator.of(context).pop(true);
         } else {
           final error = json.decode(response.body);
+          print(error);
           throw Exception(error['message'] ?? 'Failed to register child');
         }
       } catch (e) {
@@ -249,6 +255,21 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
                 },
               ),
               const SizedBox(height: 16),
+               TextFormField(
+                controller: _societyNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Society Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter society name';
+                  }
+                  return null;
+                },
+              ),
+             
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _villageController,
                 decoration: const InputDecoration(
@@ -262,20 +283,7 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _societyNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Society Name',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter society name';
-                  }
-                  return null;
-                },
-              ),
+             
               const SizedBox(height: 16),
               TextFormField(
                 controller: _districtController,

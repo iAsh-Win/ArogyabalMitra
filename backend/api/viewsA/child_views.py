@@ -6,18 +6,16 @@ from django.core.exceptions import ObjectDoesNotExist
 from ..models import AnganwadiUser, Child
 import uuid
 
-@api_view(['POST'])
+@api_view(['POST'])  # Ensure this decorator allows POST requests
 @permission_classes([IsAuthenticated])
 def create_child(request):
     try:
         data = request.data
         anganwadi_user = AnganwadiUser.objects.get(id=request.user.id)  # Ensure correct user ID is fetched
 
-        child_id = uuid.uuid4()
-
         # Create the child instance
         child = Child.objects.create(
-            id=child_id,
+            id=uuid.uuid4(),
             anganwadi_user=anganwadi_user,
             full_name=data.get("full_name"),
             birth_date=data.get("birth_date"),
@@ -34,11 +32,10 @@ def create_child(request):
             parent_aadhaar_number=data.get("parent_aadhaar_number", None)  # Allow empty parent Aadhaar number
         )
 
-        return Response({"message": "Child created successfully", "id": child.id}, status=status.HTTP_201_CREATED)
-    
-    except ObjectDoesNotExist:
+        return Response({"message": "Child created successfully", "id": str(child.id)}, status=status.HTTP_201_CREATED)
+
+    except AnganwadiUser.DoesNotExist:
         return Response({"message": "Anganwadi User not found"}, status=status.HTTP_404_NOT_FOUND)
-    
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     

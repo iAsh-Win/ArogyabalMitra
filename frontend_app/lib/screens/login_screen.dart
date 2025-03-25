@@ -62,19 +62,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (result['success']) {
           if (!mounted) return;
-          // Navigate to home and remove all previous routes
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/home',
-            (route) => false,
-          );
+          // Defer navigation to the next frame
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/home', (route) => false);
+            }
+          });
           print('Login successful');
         } else {
           if (!mounted) return;
-          _showErrorDialog(result['message']);
+          _showErrorDialog(
+            result['message'] ?? 'Login failed. Please try again.',
+          );
         }
       } catch (e) {
         if (!mounted) return;
-        _showErrorDialog('An error occurred. Please try again.');
+        _showErrorDialog('An unexpected error occurred. Please try again.');
       } finally {
         if (mounted) {
           setState(() {

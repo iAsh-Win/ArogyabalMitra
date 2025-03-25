@@ -9,7 +9,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
   late final AuthService _authService;
@@ -50,17 +51,23 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     try {
       final token = await _authService.getToken();
       if (!mounted) return;
-      if (token == null || token.isEmpty) {
-        // No token or empty token, navigate to login
-        Navigator.of(context).pushReplacementNamed('/login');
-      } else {
-        // Valid token exists, navigate to home
-        Navigator.of(context).pushReplacementNamed('/home');
-      }
+
+      // Redirect based on token presence
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final route = (token == null || token.isEmpty) ? '/login' : '/home';
+          Navigator.of(context).pushReplacementNamed(route);
+        }
+      });
     } catch (e) {
       if (!mounted) return;
-      // If there's any error checking token, go to login
-      Navigator.of(context).pushReplacementNamed('/login');
+
+      // Redirect to login in case of an error
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+      });
     }
   }
 

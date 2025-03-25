@@ -129,6 +129,35 @@ class AnganwadiSupplement(models.Model):
         return f"{self.anganwadi_user.email} - {self.supplement.name} ({self.quantity} {self.supplement.unit})"
 
 
+
+
+class MalnutritionRecord(models.Model):
+    child = models.ForeignKey('Child', on_delete=models.CASCADE, related_name='malnutrition_records')
+    weight = models.FloatField(null=True, blank=True)
+    height = models.FloatField(null=True, blank=True)
+    muac = models.FloatField(null=True, blank=True)  # Mid-upper arm circumference
+    meal_frequency = models.IntegerField(null=True, blank=True)
+    dietary_diversity_score = models.FloatField(null=True, blank=True)
+    clean_water = models.BooleanField(null=True, blank=True)
+    illnesses = models.JSONField(default=list, blank=True)  # Array of illnesses
+
+    waz = models.FloatField(null=True, blank=True)  # Weight-for-age Z-score
+    haz = models.FloatField(null=True, blank=True)  # Height-for-age Z-score
+    whz = models.FloatField(null=True, blank=True)  # Weight-for-height Z-score
+    muac_z = models.FloatField(null=True, blank=True)  # MUAC Z-score
+
+    predicted_status = models.CharField(max_length=255, null=True, blank=True)
+    recommended_foods = models.JSONField(default=list, blank=True)  # Array of food recommendations
+    supplements = models.JSONField(default=list, blank=True)  # Array of supplement data
+    nutrient_deficiencies = models.JSONField(default=list, blank=True)  # Array of nutrient deficiencies
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"MalnutritionRecord for Child ID {self.child.id}"
+    
+
 # Supplement Distribution Model
 class SupplementDistribution(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
@@ -136,6 +165,9 @@ class SupplementDistribution(models.Model):
     distributed_by = models.ForeignKey(AnganwadiUser, on_delete=models.CASCADE)  # Anganwadi worker who provided it
     supplement = models.ForeignKey(Supplement, on_delete=models.CASCADE)  # Link to the Supplement model
     quantity = models.PositiveIntegerField()  # Quantity of the supplement distributed
+    malnutrition_record = models.ForeignKey(  # Link to the MalnutritionRecord
+        MalnutritionRecord, on_delete=models.CASCADE, null=True, blank=True, related_name="supplement_distributions"
+    )
     distribution_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:

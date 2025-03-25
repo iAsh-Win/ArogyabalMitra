@@ -2,9 +2,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from ..models import Supplement, AnganwadiSupplement, AnganwadiUser, SupplementDistribution, Child
+from ..models import Supplement, AnganwadiSupplement, AnganwadiUser, SupplementDistribution, Child, MalnutritionRecord
 from django.core.exceptions import ObjectDoesNotExist
 import uuid
+from django.http import JsonResponse
 
 # 🔹 Create a Supplement
 @api_view(['POST'])
@@ -123,46 +124,49 @@ def delete_anganwadi_supplement(request, supplement_id):
 @permission_classes([IsAuthenticated])
 def distribute_supplement(request):
     try:
-        data = request.data
-        anganwadi_user = AnganwadiUser.objects.get(id=data.get("anganwadi_user_id"))  # Fetch Anganwadi user by ID
-        supplement = Supplement.objects.get(id=data.get("supplement_id"))
-        child = Child.objects.get(id=data.get("child_id"))
+        # Extract data from the request
+        child_id = request.data.get("child_id")
+        supplement_id = request.data.get("supplement_id")
+        quantity = request.data.get("quantity")
+        malnutrition_record_id = request.data.get("malnutrition_record_id")  # New field
 
-        # Check if the supplement exists in the Anganwadi's stock
-        anganwadi_supplement = AnganwadiSupplement.objects.get(
-            anganwadi_user=anganwadi_user,
-            supplement=supplement
-        )
+        # Validate required fields
+        if not all([child_id, supplement_id, quantity]):
+            return JsonResponse({"message": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Ensure sufficient quantity is available
-        distribute_quantity = data.get("quantity", 0)
-        if anganwadi_supplement.quantity < distribute_quantity:
-            return Response({"message": "Insufficient stock for this supplement"}, status=status.HTTP_400_BAD_REQUEST)
+        # Fetch the related objects
+        child = Child.objects.get(id=child_id)
+        supplement = Supplement.objects.get(id=supplement_id)
+        malnutrition_record = MalnutritionRecord.objects.get(id=malnutrition_record_id) if malnutrition_record_id else None
+        anganwadi_user = request.user  # Assuming the logged-in user is the distributor
 
-        # Deduct the quantity from the Anganwadi's stock
-        anganwadi_supplement.quantity -= distribute_quantity
-        anganwadi_supplement.save()
-
-        # Create a record in the SupplementDistribution model
+        # Create the supplement distribution record
         distribution = SupplementDistribution.objects.create(
             child=child,
             distributed_by=anganwadi_user,
             supplement=supplement,
-            quantity=distribute_quantity
+            quantity=quantity,
+            malnutrition_record=malnutrition_record  # Associate with the malnutrition record
         )
 
-        return Response({
+        return JsonResponse({
             "message": "Supplement distributed successfully",
-            "distribution_id": str(distribution.id),
-            "remaining_stock": anganwadi_supplement.quantity
+            "distribution": {
+                "id": str(distribution.id),
+                "child": distribution.child.full_name,
+                "supplement": distribution.supplement.name,
+                "quantity": distribution.quantity,
+                "malnutrition_record": str(distribution.malnutrition_record.id) if distribution.malnutrition_record else None,
+                "distribution_date": distribution.distribution_date
+            }
         }, status=status.HTTP_201_CREATED)
 
-    except AnganwadiSupplement.DoesNotExist:
-        return Response({"message": "Supplement not found in Anganwadi stock"}, status=status.HTTP_404_NOT_FOUND)
     except Child.DoesNotExist:
-        return Response({"message": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
+        return JsonResponse({"message": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
     except Supplement.DoesNotExist:
-        return Response({"message": "Supplement not found"}, status=status.HTTP_404_NOT_FOUND)
+        return JsonResponse({"message": "Supplement not found"}, status=status.HTTP_404_NOT_FOUND)
+    except MalnutritionRecord.DoesNotExist:
+        return JsonResponse({"message": "Malnutrition record not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

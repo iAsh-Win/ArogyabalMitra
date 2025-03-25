@@ -4,7 +4,6 @@ import 'vaccination_data_screen.dart';
 import 'inventory_management_screen.dart';
 import 'malnutrition_detection_screen.dart';
 import '../services/auth_service.dart';
-import 'report_screen.dart';
 import 'children_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,28 +20,31 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeAuthService();
-    _checkAuthStatus();
+    _initializeAndCheckAuth();
+  }
+
+  Future<void> _initializeAndCheckAuth() async {
+    await _initializeAuthService(); // Ensure _authService is initialized
+    await _checkAuthStatus(); // Check auth status after initialization
   }
 
   Future<void> _initializeAuthService() async {
-    _authService = await AuthService.create();
+    _authService = await AuthService.create(); // Initialize AuthService
   }
 
   Future<void> _checkAuthStatus() async {
-    try {
-      final token = await _authService.getToken();
-      if (!mounted) return;
+    final token = await _authService.getToken();
+    if (!mounted) return;
 
-      if (token == null || token.isEmpty) {
-        // No token or empty token, navigate to login
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      // If there's any error checking token, go to login
-      Navigator.of(context).pushReplacementNamed('/login');
+    if (token == null || token.isEmpty) {
+      // Redirect to login if no token is found
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+      });
     }
+    print('Token: $token');
   }
 
   @override
@@ -61,7 +63,13 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: CircleAvatar(
               radius: 16,
-              backgroundImage: const AssetImage('assets/default_profile.png'),
+              backgroundImage: const AssetImage(
+                'assets/images/default_profile.png',
+              ),
+              onBackgroundImageError: (_, __) {
+                // Fallback to a placeholder image if the asset is missing
+                debugPrint('Error loading profile image');
+              },
             ),
             onPressed: () {
               showDialog(
@@ -78,7 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           CircleAvatar(
                             radius: 50,
-                            backgroundImage: AssetImage('assets/default_profile.png'),
+                            backgroundImage: AssetImage(
+                              'assets/default_profile.png',
+                            ),
                           ),
                           const SizedBox(height: 20),
                           Text(
@@ -88,9 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 10),
                           Text(
                             'Health Worker',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(color: Colors.grey[600]),
                           ),
                           const SizedBox(height: 20),
                           ListTile(
@@ -121,9 +130,38 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              await _authService.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/login');
+              try {
+                await _authService
+                    .logout(); // Call the logout method from AuthService
+                if (context.mounted) {
+                  // Defer navigation to the next frame
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (context.mounted) {
+                      Navigator.of(context).pushReplacementNamed('/login');
+                    }
+                  });
+                }
+              } catch (e) {
+                debugPrint('Error during logout: $e');
+                // Optionally, show an error dialog if logout fails
+                if (context.mounted) {
+                  showDialog(
+                    context: context,
+                    builder:
+                        (context) => AlertDialog(
+                          title: const Text('Logout Failed'),
+                          content: const Text(
+                            'An error occurred while logging out. Please try again.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                  );
+                }
               }
             },
           ),
@@ -156,9 +194,9 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 32),
               Text(
                 'Quick Actions',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               _buildFeatureGrid(context),
@@ -174,9 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: InputDecoration(
         hintText: 'Search child records...',
         prefixIcon: const Icon(Icons.search),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: Colors.white,
       ),
@@ -195,9 +231,9 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text(
             'Today\'s Overview',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           GridView.count(
@@ -238,12 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 '45',
                 Icons.child_care_outlined,
               ),
-              _buildStatCard(
-                context,
-                'Malnourished',
-                '8',
-                Icons.sick_outlined,
-              ),
+              _buildStatCard(context, 'Malnourished', '8', Icons.sick_outlined),
             ],
           ),
         ],
@@ -259,11 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: Theme.of(context).colorScheme.primary,
-          size: 32,
-        ),
+        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 32),
         const SizedBox(height: 8),
         Text(
           value,
@@ -272,10 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Theme.of(context).colorScheme.primary,
           ),
         ),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(title, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -370,9 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -390,9 +412,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),

@@ -10,7 +10,7 @@ class ChildrenListScreen extends StatefulWidget {
 
 class _ChildrenListScreenState extends State<ChildrenListScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<Map<String, dynamic>> _children = [
+  final List<Map<String, dynamic>> _children = [
     {
       'id': '1',
       'name': 'Rahul Kumar',

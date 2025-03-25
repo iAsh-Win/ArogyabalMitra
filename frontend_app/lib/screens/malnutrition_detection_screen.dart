@@ -1,44 +1,90 @@
 import 'package:flutter/material.dart';
 import 'child_malnutrition_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../config/api_config.dart';
+import '../services/auth_service.dart';
+
 class MalnutritionDetectionScreen extends StatefulWidget {
   const MalnutritionDetectionScreen({super.key});
 
   @override
-  State<MalnutritionDetectionScreen> createState() => _MalnutritionDetectionScreenState();
+  State<MalnutritionDetectionScreen> createState() =>
+      _MalnutritionDetectionScreenState();
 }
 
-class _MalnutritionDetectionScreenState extends State<MalnutritionDetectionScreen> {
+class _MalnutritionDetectionScreenState
+    extends State<MalnutritionDetectionScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _muacController = TextEditingController();
   final String _nutritionalStatus = '';
+
   String? _selectedChildId;
 
-  final List<Map<String, dynamic>> _children = [
-    {
-      'id': '1',
-      'name': 'John Doe',
-      'dateOfBirth': '2022-01-01',
-      'gender': 'Male',
-      'measurements': []
-    },
-    // Add more sample data as needed
-  ];
+  List<dynamic> _children = [];
+
   List<Map<String, dynamic>> _filteredChildren = [];
+  bool _isLoading = true;
+  late final AuthService _authService;
 
   @override
   void initState() {
     super.initState();
-    _filteredChildren = _children;
+    // _filteredChildren = _children;
+    _initializeAndFetchChildren();
+  }
+
+  Future<void> _initializeAndFetchChildren() async {
+    _authService = await AuthService.create();
+    // _authService = await AuthService.create();
+    await _fetchChildren();
+  }
+
+  Future<void> _fetchChildren() async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null || token.isEmpty) {
+        // Handle missing token (e.g., redirect to login)
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse(ApiConfig.getChildren),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _children = List<Map<String, dynamic>>.from(data['children']);
+          _filteredChildren = List<Map<String, dynamic>>.from(
+            _children,
+          ); // Initialize filtered list
+          _isLoading = false;
+        });
+      } else {
+        debugPrint('Failed to fetch children: ${response.body}');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching children: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Malnutrition Detection'),
-      ),
+      appBar: AppBar(title: const Text('Malnutrition Detection')),
       body: Column(
         children: [
           Padding(
@@ -53,13 +99,19 @@ class _MalnutritionDetectionScreenState extends State<MalnutritionDetectionScree
                 ),
               ),
               onChanged: (value) {
-                setState(() {
-                  _filteredChildren = _children
-                      .where((child) =>
-                          child['name'].toString().toLowerCase()
-                              .contains(value.toLowerCase()))
-                      .toList();
-                });
+                // setState(() {
+                //   _filteredChildren =
+                //       _children
+                //           .where(
+                //             (child) =>
+                //                 child['full_name'] != null &&
+                //                 child['full_name']
+                //                     .toString()
+                //                     .toLowerCase()
+                //                     .contains(value.toLowerCase()),
+                //           )
+                //           .toList();
+                // });
               },
             ),
           ),
@@ -80,63 +132,66 @@ class _MalnutritionDetectionScreenState extends State<MalnutritionDetectionScree
                 ),
                 const SizedBox(height: 8),
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    itemCount: _searchController.text.isEmpty
-                        ? _children.length
-                        : _filteredChildren.length,
-                    itemBuilder: (context, index) {
-                      final child = _searchController.text.isEmpty
-                          ? _children[index]
-                          : _filteredChildren[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8.0),
-                        child: ListTile(
-                          title: Text(
-                            child['name'],
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'DoB: ${child['dateOfBirth']}',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Gender: ${child["gender"]}',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                                if (child['measurements'].isNotEmpty) ...[                                  
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Last Status: ${child["measurements"].last["status"]}',
-                                    style: Theme.of(context).textTheme.bodyMedium,
-                                  ),
-                                ],
-                              ],
+                  child:
+                      _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _filteredChildren.isEmpty
+                          ? const Center(child: Text('No children found.'))
+                          : ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
                             ),
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ChildMalnutritionScreen(
-                                  childData: child,
+                            itemCount: _filteredChildren.length,
+                            itemBuilder: (context, index) {
+                              final child = _filteredChildren[index];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 8.0),
+                                child: ListTile(
+                                  title: Text(
+                                    child['full_name'],
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Date of birth: ${child['birth_date']}',
+                                          style:
+                                              Theme.of(
+                                                context,
+                                              ).textTheme.bodyMedium,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Gender: ${child["gender"]}',
+                                          style:
+                                              Theme.of(
+                                                context,
+                                              ).textTheme.bodyMedium,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) =>
+                                                ChildMalnutritionScreen(
+                                                  childData: child,
+                                                ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              ),
-                            ).then((value) {
-                              // Refresh the list when returning from ChildMalnutritionScreen
-                              setState(() {});
-                            });
-                          },
-                        ),
-                      );
-                    },
-                  ),
+                              );
+                            },
+                          ),
                 ),
               ],
             ),
@@ -146,17 +201,3 @@ class _MalnutritionDetectionScreenState extends State<MalnutritionDetectionScree
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -21,10 +21,7 @@ class AuthService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: json.encode({
-          'email': email,
-          'password': password,
-        }),
+        body: json.encode({'email': email, 'password': password}),
       );
 
       if (response.statusCode == 200) {
@@ -34,7 +31,10 @@ class AuthService {
         return {'success': true, 'message': 'Login successful'};
       } else {
         final error = json.decode(response.body);
-        return {'success': false, 'message': error['message'] ?? 'Login failed'};
+        return {
+          'success': false,
+          'message': error['message'] ?? 'Login failed',
+        };
       }
     } catch (e) {
       return {'success': false, 'message': 'An error occurred: $e'};
@@ -42,10 +42,11 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    await _prefs.remove('token');
+    await _prefs.remove('token'); // Clear the token
+    // Add any additional logout logic here if needed
   }
 
   Future<String?> getToken() async {
     return _prefs.getString('token');
   }
-} 
+}

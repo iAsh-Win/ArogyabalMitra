@@ -2,6 +2,7 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import socket
 
 
 def main():
@@ -17,9 +18,18 @@ def main():
         ) from exc
     # execute_from_command_line(sys.argv)
     
-    # Add this block to set default host and port
+    # # Add this block to set default host and port
+    # if len(sys.argv) == 2 and sys.argv[1] == "runserver":
+    #     sys.argv += ["172.16.11.177:8000"]  # Set default host and port
+
+    # execute_from_command_line(sys.argv)
+
+    # Get the system's IPv4 address
+    ipv4_address = socket.gethostbyname(socket.gethostname())
+    
+    # Add this block to set default host and port dynamically
     if len(sys.argv) == 2 and sys.argv[1] == "runserver":
-        sys.argv += ["192.168.133.63:8000"]  # Set default host and port
+        sys.argv += [f"{ipv4_address}:8000"]  # Use the dynamic IPv4 address
 
     execute_from_command_line(sys.argv)
 
