@@ -4,6 +4,8 @@ import 'dart:convert';
 import '../config/api_config.dart';
 import '../services/auth_service.dart';
 import 'report_screen.dart';
+import 'package:intl/intl.dart';
+
 
 class ChildReportsScreen extends StatefulWidget {
   final List<Map<String, dynamic>> reports;
@@ -92,7 +94,8 @@ class _ChildReportsScreenState extends State<ChildReportsScreen> {
                       margin: const EdgeInsets.only(bottom: 8.0),
                       child: ListTile(
                         title: Text(
-                          'Report Date: ${DateTime.parse(report['created_at']).toLocal().toString().split(' ')[0]}',
+
+                          'Report Date: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.parse(report['created_at']).toLocal())}',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         subtitle: Column(
@@ -102,9 +105,8 @@ class _ChildReportsScreenState extends State<ChildReportsScreen> {
                             Text('Weight: ${report['weight'] ?? 'N/A'} kg'),
                             Text('Height: ${report['height'] ?? 'N/A'} cm'),
                             Text('MUAC: ${report['muac'] ?? 'N/A'} cm'),
-                            Text('Status: ${report['status'] ?? 'N/A'}'),
                             Text(
-                              'Predicted Status: ${report['predicted_status'] ?? 'N/A'}',
+                              'Report Status: ${report['predicted_status'] ?? 'N/A'}',
                             ),
                           ],
                         ),

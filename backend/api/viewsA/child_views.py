@@ -136,3 +136,21 @@ def update_child(request, child_id):
         return Response({"message": "Child not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_children_with_malnutrition_reports(request):
+    try:
+        # Fetch unique children whose IDs are present in MalnutritionRecord
+        children = Child.objects.filter(
+            malnutrition_records__isnull=False
+        ).distinct().values(  # Use distinct() to ensure unique children
+            "id", "full_name", "birth_date", "gender", "aadhaar_number", "village",
+            "society_name", "district", "state", "pin_code", "father_name", "father_contact",
+            "mother_name", "parent_aadhaar_number"
+        ).order_by('id')  # Ensure consistent ordering by ID
+
+        return Response({"children": list(children)}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)

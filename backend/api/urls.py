@@ -2,8 +2,9 @@ from django.urls import path
 from .viewsA import auth_views, anganwadi_views, child_views, utility_views, malnutrtion_views, supplement_views
 from .viewsB import auth_view, supplements_views
 from .viewsA.supplement_views import distribute_supplement
-from .viewsB.anganwadi_views import get_all_anganwadi_users
+from .viewsB.anganwadi_views import get_all_anganwadi_users, request_supplements, get_all_supplement_requests, get_anganwadi_supplement_requests
 from .viewsA.malnutrtion_views import get_child_reports, get_child_report
+from .viewsA.child_views import get_children_with_malnutrition_reports
 
 urlpatterns = [
     path('logout/', auth_views.logout_user, name="logout_user"),
@@ -15,6 +16,8 @@ urlpatterns = [
     path('anganwadi/create', anganwadi_views.create_anganwadi_user, name="create_anganwadi_user"),
     path('anganwadi/users', anganwadi_views.get_anganwadi_users, name="get_anganwadi_users"),
     path('anganwadi/all', get_all_anganwadi_users, name="get_all_anganwadi_users"),
+    path('anganwadi/request_supplements', request_supplements, name="request_supplements"),
+    path('anganwadi/supplement_requests', get_anganwadi_supplement_requests, name="get_anganwadi_supplement_requests"),
 
     # 🔹 Child Management Routes
     path('anganwadi/children', child_views.get_children, name="get_children"),
@@ -25,12 +28,14 @@ urlpatterns = [
     path('anganwadi/children/update/<str:child_id>', child_views.update_child, name="update_child"),
     path('anganwadi/children/delete/<str:child_id>', child_views.delete_child, name="delete_child"),
     path('anganwadi/getfood', utility_views.get_csvFoodNames, name="get_children_csv"),
+    path('anganwadi/children_with_reports/', get_children_with_malnutrition_reports, name="get_children_with_reports"),
 
     path('anganwadi/check_malnutrtion/<str:child_id>', malnutrtion_views.check_malnutrition, name='check_malnutrition'),
     path('anganwadi/get_child_report/<str:malnutrition_record_id>', get_child_report, name='get_child_report'),  # New API
     path('anganwadi/get_child_reports/<str:child_id>', get_child_reports, name="get_child_reports"),
 
     path('head_officer/login', auth_view.login_head_officer, name="login_head_officer"),
+    path('head_officer/supplement_requests', get_all_supplement_requests, name="get_all_supplement_requests"),
 
     # 🔹 Supplement Routes
     path('supplements', supplement_views.get_supplements, name='get_supplements'),

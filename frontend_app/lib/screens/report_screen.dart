@@ -1,8 +1,12 @@
+import 'package:AarogyaBalmitra/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/api_config.dart';
 import '../services/auth_service.dart';
+import 'home_screen.dart';
+import 'package:intl/intl.dart';
+
 
 class ReportScreen extends StatefulWidget {
   final Map<String, dynamic> childData;
@@ -15,6 +19,7 @@ class ReportScreen extends StatefulWidget {
 
 class _ReportScreenState extends State<ReportScreen> {
   bool _isLoading = true;
+  bool _hasDistributedSupplements = false;
   Map<String, String> selectedQuantities = {};
   final PageController _pageController = PageController();
 
@@ -27,28 +32,29 @@ class _ReportScreenState extends State<ReportScreen> {
   void _loadData() async {
     final supplements =
         widget.childData['malnutrition_record']?['supplements'] as List? ?? [];
-    final hasDistributedSupplements = supplements.any(
+    _hasDistributedSupplements = supplements.any(
       (supplement) =>
           supplement['quantity_distributed'] != null &&
-          supplement['distribution_date'] != null,
+          supplement['quantity_distributed'] > 0 && // Ensure quantity is valid
+          supplement['distribution_date'] != null &&
+          supplement['distribution_date']
+              .toString()
+              .isNotEmpty, // Ensure date is valid
     );
 
     setState(() {
       _isLoading = false; // Remove loader
-      if (hasDistributedSupplements) {
-        _pageController.jumpToPage(1); // Show Distributed Supplements view
-      } else {
-        _pageController.jumpToPage(0); // Show Prescribed Supplements view
-      }
     });
   }
 
   Future<void> _saveSupplementQuantities() async {
     final childId = widget.childData['child']?['id'];
-    if (childId == null) {
+    final malnutritionRecordId =
+        widget.childData['malnutrition_record']?['malnutrition_record_id'];
+    if (childId == null || malnutritionRecordId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Child ID is missing.'),
+          content: Text('Child ID or Malnutrition Record ID is missing.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -92,7 +98,11 @@ class _ReportScreenState extends State<ReportScreen> {
       return;
     }
 
-    final requestData = {"child_id": childId, "supplements": supplements};
+    final requestData = {
+      "child_id": childId,
+      "malnutrition_record_id": malnutritionRecordId,
+      "supplements": supplements,
+    };
 
     try {
       final authService = await AuthService.create();
@@ -120,14 +130,19 @@ class _ReportScreenState extends State<ReportScreen> {
         body: json.encode(requestData),
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Supplement quantities saved successfully.'),
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.green, // Ensure green color for success
           ),
         );
-        _reloadScreen(); // Reload the screen
+
+        // Redirect to HomeScreen without changing the route
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
       } else {
         final errorMessage =
             json.decode(response.body)['message'] ?? 'An error occurred.';
@@ -147,10 +162,9 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   void _reloadScreen() async {
-    final recordId =
-        widget.childData['malnutrition_record_id'] ??
-        widget.childData['child']?['id'];
-    if (recordId == null) {
+    final malnutritionRecordId =
+        widget.childData['malnutrition_record']?['malnutrition_record_id'];
+    if (malnutritionRecordId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Record ID is missing.'),
@@ -159,7 +173,6 @@ class _ReportScreenState extends State<ReportScreen> {
       );
       return;
     }
-
     try {
       final authService = await AuthService.create();
       final token = await authService.getToken();
@@ -178,7 +191,7 @@ class _ReportScreenState extends State<ReportScreen> {
       });
 
       final response = await http.get(
-        Uri.parse('${ApiConfig.get_child_report}$recordId'),
+        Uri.parse('${ApiConfig.get_child_report}$malnutritionRecordId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -260,9 +273,10 @@ class _ReportScreenState extends State<ReportScreen> {
                   const SizedBox(height: 16),
                   _buildRecommendedFoods(malnutritionRecord),
                   const SizedBox(height: 16),
-                  _buildSupplements(malnutritionRecord),
+                  _hasDistributedSupplements
+                      ? _buildDistributedSupplements(malnutritionRecord)
+                      : _buildPrescribedSupplements(malnutritionRecord),
                   const SizedBox(height: 16),
-                  _buildGrowthChart(),
                 ],
               ),
             ),
@@ -478,7 +492,79 @@ class _ReportScreenState extends State<ReportScreen> {
     );
   }
 
-  Widget _buildSupplements(Map<String, dynamic> record) {
+  Widget _buildPrescribedSupplements(Map<String, dynamic> record) {
+    final supplements = (record['supplements'] as List?) ?? [];
+    final controllers = <String, TextEditingController>{};
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Prescribed Supplements',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children:
+                  supplements
+                      .where(
+                        (supplement) =>
+                            supplement['id'] != null &&
+                            (supplement['quantity_distributed'] == null ||
+                                supplement['distribution_date'] == null),
+                      )
+                      .map((supplement) {
+                        final supplementName = supplement['name'] ?? '';
+                        controllers[supplementName] ??= TextEditingController(
+                          text: selectedQuantities[supplementName] ?? '',
+                        );
+
+                        return ListTile(
+                          title: Text(supplementName),
+                          leading: const Icon(Icons.medication),
+                          trailing: SizedBox(
+                            width: 100,
+                            child: TextField(
+                              controller: controllers[supplementName],
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                hintText: 'Quantity',
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 8,
+                                ),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedQuantities[supplementName] = value;
+                                });
+                              },
+                            ),
+                          ),
+                        );
+                      })
+                      .toList(),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: ElevatedButton(
+                onPressed: _saveSupplementQuantities,
+                child: const Text('Save Quantities'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDistributedSupplements(Map<String, dynamic> record) {
     final supplements = (record['supplements'] as List?) ?? [];
 
     return Card(
@@ -487,132 +573,41 @@ class _ReportScreenState extends State<ReportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              height: 400,
-              child: PageView(
-                controller: _pageController,
-                children: [
-                  // Prescribed Supplements Page (for entering quantities)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Prescribed Supplements',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: ListView(
-                          children:
-                              supplements
-                                  .where(
-                                    (supplement) =>
-                                        supplement['id'] != null &&
-                                        (supplement['quantity_distributed'] ==
-                                                null ||
-                                            supplement['distribution_date'] ==
-                                                null),
-                                  )
-                                  .map((supplement) {
-                                    final supplementName =
-                                        supplement['name'] ?? '';
-                                    return ListTile(
-                                      title: Text(supplementName),
-                                      leading: const Icon(Icons.medication),
-                                      trailing: SizedBox(
-                                        width: 100,
-                                        child: TextField(
-                                          keyboardType: TextInputType.number,
-                                          decoration: const InputDecoration(
-                                            hintText: 'Quantity',
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 8,
-                                                ),
-                                          ),
-                                          onChanged: (value) {
-                                            setState(() {
-                                              selectedQuantities[supplementName] =
-                                                  value;
-                                            });
-                                          },
-                                          controller: TextEditingController(
-                                            text:
-                                                selectedQuantities[supplementName] ??
-                                                '',
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  })
-                                  .toList(),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: _saveSupplementQuantities,
-                          child: const Text('Save Quantities'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Distributed Supplements Page
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Distributed Supplements',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: ListView(
-                          children:
-                              supplements
-                                  .where(
-                                    (supplement) =>
-                                        supplement['quantity_distributed'] !=
-                                            null &&
-                                        supplement['distribution_date'] != null,
-                                  )
-                                  .map((supplement) {
-                                    final supplementName =
-                                        supplement['name'] ?? '';
-                                    final quantityDistributed =
-                                        supplement['quantity_distributed'] ?? 0;
-                                    final distributionDate =
-                                        supplement['distribution_date'] ??
-                                        'Not yet distributed';
+            const Text(
+              'Distributed Supplements',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children:
+                  supplements
+                      .where(
+                        (supplement) =>
+                            supplement['quantity_distributed'] != null &&
+                            supplement['distribution_date'] != null,
+                      )
+                      .map((supplement) {
+                        final supplementName = supplement['name'] ?? '';
+                        final quantityDistributed =
+                            supplement['quantity_distributed'] ?? 0;
+                        final rawDate = supplement['distribution_date'] ?? '';
+                        final formattedDate =
+                            rawDate.isNotEmpty
+                                ? DateFormat('yyyy-MM-dd HH:mm:ss').format(
+                                  DateTime.parse(rawDate).toLocal(),
+                                ) // Formats as 'YYYY-MM-DD HH:MM:SS'
+                                : 'Not yet distributed';
 
-                                    return ListTile(
-                                      title: Text(supplementName),
-                                      subtitle: Text(
-                                        'Last distributed: $distributionDate',
-                                      ),
-                                      leading: const Icon(
-                                        Icons.medication_liquid,
-                                      ),
-                                      trailing: Text(
-                                        '$quantityDistributed units',
-                                      ),
-                                    );
-                                  })
-                                  .toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                        return ListTile(
+                          title: Text(supplementName),
+                          subtitle: Text('Distributed Date: $formattedDate'),
+                          leading: const Icon(Icons.medication_liquid),
+                          trailing: Text('$quantityDistributed units'),
+                        );
+                      })
+                      .toList(),
             ),
           ],
         ),

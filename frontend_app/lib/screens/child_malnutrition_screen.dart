@@ -732,10 +732,10 @@ class AnimatedSubmitButton extends StatefulWidget {
   final String label;
 
   const AnimatedSubmitButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.label,
-  }) : super(key: key);
+  });
 
   @override
   _AnimatedSubmitButtonState createState() => _AnimatedSubmitButtonState();

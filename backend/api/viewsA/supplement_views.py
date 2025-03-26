@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from ..models import Supplement, AnganwadiSupplement, AnganwadiUser, SupplementDistribution, Child
+from ..models import Supplement, AnganwadiSupplement, AnganwadiUser, SupplementDistribution, Child, MalnutritionRecord
 from django.core.exceptions import ObjectDoesNotExist
 import uuid
 
@@ -12,7 +12,6 @@ import uuid
 def create_supplement(request):
     try:
         data = request.data
-        print(data)
         supplement = Supplement.objects.create(
             id=uuid.uuid4(),  # Explicitly set the UUID for the new supplement
             name=data.get("name"),
@@ -124,10 +123,18 @@ def delete_anganwadi_supplement(request, supplement_id):
 def distribute_supplement(request):
     try:
         data = request.data
-        print(data)  # Log the incoming request data for debugging
 
         anganwadi_user = AnganwadiUser.objects.get(id=request.user.id)  # Fetch Anganwadi user by ID
         child = Child.objects.get(id=data.get("child_id"))
+        malnutrition_record_id = data.get("malnutrition_record_id")  # Get the malnutrition record ID
+
+        # Validate malnutrition record ID
+        malnutrition_record = None
+        if malnutrition_record_id:
+            try:
+                malnutrition_record = MalnutritionRecord.objects.get(id=malnutrition_record_id)
+            except MalnutritionRecord.DoesNotExist:
+                return Response({"message": "Malnutrition record not found"}, status=status.HTTP_404_NOT_FOUND)
 
         for supplement_data in data.get("supplements", []):
             supplement_id = supplement_data.get("supplement_id")
@@ -161,7 +168,8 @@ def distribute_supplement(request):
                 child=child,
                 distributed_by=anganwadi_user,
                 supplement=supplement,
-                quantity=quantity
+                quantity=quantity,
+                malnutrition_record=malnutrition_record  # Link to the malnutrition record
             )
 
         return Response({"message": "Supplements distributed successfully"}, status=status.HTTP_201_CREATED)

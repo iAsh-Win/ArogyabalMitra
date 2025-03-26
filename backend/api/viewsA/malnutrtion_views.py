@@ -263,6 +263,7 @@ def get_child_report(request, malnutrition_record_id):
         # Fetch the malnutrition record by its ID
         malnutrition_record = MalnutritionRecord.objects.get(id=malnutrition_record_id)
 
+
         # Fetch the associated child record
         child = malnutrition_record.child
 
@@ -327,7 +328,6 @@ def get_child_report(request, malnutrition_record_id):
                 "created_at": malnutrition_record.created_at,
             },
         }
-
         return JsonResponse(response_data, status=status.HTTP_200_OK)
 
     except MalnutritionRecord.DoesNotExist:

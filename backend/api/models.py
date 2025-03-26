@@ -177,3 +177,18 @@ class SupplementDistribution(models.Model):
 
     def __str__(self):
         return f"{self.supplement.name} - {self.child.full_name} ({self.quantity} {self.supplement.unit})"
+
+
+class SupplementRequest(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)  # Unique ID for the request
+    anganwadi_user = models.ForeignKey(AnganwadiUser, on_delete=models.CASCADE)  # Link to the requesting Anganwadi user
+    supplements = models.JSONField(default=list)  # Array of supplements with IDs and quantities
+    request_date = models.DateTimeField(auto_now_add=True)  # Date when the request was made
+    status = models.CharField(
+        max_length=50,
+        choices=[("Pending", "Pending"), ("Approved", "Approved"), ("Rejected", "Rejected")],
+        default="Pending"
+    )  # Status of the request
+
+    def __str__(self):
+        return f"Request by {self.anganwadi_user.full_name} on {self.request_date}"

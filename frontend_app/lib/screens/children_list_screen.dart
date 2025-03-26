@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/api_config.dart';
 import '../services/auth_service.dart';
-import 'report_screen.dart';
 import 'child_reports_screen.dart';
 
 class ChildrenListScreen extends StatefulWidget {
@@ -40,7 +39,7 @@ class _ChildrenListScreenState extends State<ChildrenListScreen> {
       }
 
       final response = await http.get(
-        Uri.parse(ApiConfig.getChildren),
+        Uri.parse(ApiConfig.children_with_reports),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'http://172.16.11.177:8000/api';
+  static const String baseUrl = 'http://192.168.133.63:8000/api';
 
   // Auth endpoints
   static const String login = '$baseUrl/anganwadi/login';
@@ -13,7 +13,14 @@ class ApiConfig {
   static const String distribute_suppliment = '$baseUrl/supplements/distribute/';
 
   static const String get_child_report = '$baseUrl/anganwadi/get_child_report/';
-    static const String get_child_reports = '$baseUrl/anganwadi/get_child_reports/';
+  static const String get_child_reports = '$baseUrl/anganwadi/get_child_reports/';
+   static const String anganwadi_supplements = '$baseUrl/anganwadi-supplements';
+
+ static const String request_supplements = '$baseUrl/anganwadi/request_supplements';
+ static const String all_supplement_requests = '$baseUrl/anganwadi/supplement_requests';
+
+  static const String children_with_reports = '$baseUrl/anganwadi/children_with_reports';
+
 
 
 
