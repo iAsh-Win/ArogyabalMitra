@@ -135,7 +135,7 @@ class _InventoryRequestsScreenState extends State<InventoryRequestsScreen> {
                                 ],
                               ),
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),
