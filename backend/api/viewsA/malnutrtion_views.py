@@ -16,6 +16,7 @@ from django.conf import settings
 import json  # Import json module for serialization
 import numpy as np  # Import numpy for type checking
 from ..ai_models.suggestions import generate_recommendation  # Import the function
+import uuid  # Import uuid module for generating UUIDs
 
 model_path = os.path.join(
     settings.BASE_DIR, "api", "ai_models", "malnutrition_rf_model.pkl"
@@ -195,6 +196,7 @@ def check_malnutrition(request, child_id):
 
             # Save the data into the MalnutritionRecord model
             malnutrition_record = MalnutritionRecord.objects.create(
+                id=uuid.uuid4(),  # Explicitly set the UUID for the new record
                 child=child,
                 weight=child_data.get("Weight"),
                 height=child_data.get("Height"),
@@ -223,6 +225,7 @@ def check_malnutrition(request, child_id):
                     "birth_date": child.birth_date,
                 },
                 "malnutrition_record": {
+                    "malnutrition_record_id": str(malnutrition_record.id),  # Include malnutrition_record_id
                     "weight": malnutrition_record.weight,
                     "height": malnutrition_record.height,
                     "muac": malnutrition_record.muac,
@@ -255,26 +258,13 @@ def check_malnutrition(request, child_id):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def get_child_report(request, child_id):
+def get_child_report(request, malnutrition_record_id):
     try:
-        # Fetch the child record
-        child = Child.objects.get(id=child_id)
-        if child is None:
-            return JsonResponse(
-                {"message": "Child not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+        # Fetch the malnutrition record by its ID
+        malnutrition_record = MalnutritionRecord.objects.get(id=malnutrition_record_id)
 
-        # Fetch the latest malnutrition record for the child
-        malnutrition_record = (
-            MalnutritionRecord.objects.filter(child=child)
-            .order_by("-created_at")
-            .first()
-        )
-        if malnutrition_record is None:
-            return JsonResponse(
-                {"message": "No malnutrition record found for this child"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        # Fetch the associated child record
+        child = malnutrition_record.child
 
         # Fetch supplement distribution details for the malnutrition record
         supplement_distributions = SupplementDistribution.objects.filter(
@@ -316,6 +306,7 @@ def get_child_report(request, child_id):
                 "birth_date": child.birth_date,
             },
             "malnutrition_record": {
+                "malnutrition_record_id": str(malnutrition_record.id),
                 "weight": malnutrition_record.weight,
                 "height": malnutrition_record.height,
                 "muac": malnutrition_record.muac,
@@ -335,6 +326,73 @@ def get_child_report(request, child_id):
                 "supplements": supplements_with_distribution,  # Include distribution details
                 "created_at": malnutrition_record.created_at,
             },
+        }
+
+        return JsonResponse(response_data, status=status.HTTP_200_OK)
+
+    except MalnutritionRecord.DoesNotExist:
+        return JsonResponse(
+            {"message": "Malnutrition record not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_child_reports(request, child_id):
+    try:
+        # Fetch the child record
+        child = Child.objects.get(id=child_id)
+        if child is None:
+            return JsonResponse(
+                {"message": "Child not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Fetch all malnutrition records for the child
+        malnutrition_records = MalnutritionRecord.objects.filter(child=child).order_by(
+            "-created_at"
+        )
+
+        if not malnutrition_records.exists():
+            return JsonResponse(
+                {"message": "No malnutrition records found for this child"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Prepare the response data
+        reports = []
+        for record in malnutrition_records:
+            reports.append({
+                "malnutrition_record_id": str(record.id),  # Use the new `id` field
+                "weight": record.weight,
+                "height": record.height,
+                "muac": record.muac,
+                "meal_frequency": record.meal_frequency,
+                "dietary_diversity_score": record.dietary_diversity_score,
+                "clean_water": record.clean_water,
+                "illnesses": record.illnesses,
+                "z_scores": {
+                    "waz": record.waz,
+                    "haz": record.haz,
+                    "whz": record.whz,
+                    "muac_z": record.muac_z,
+                },
+                "predicted_status": record.predicted_status,
+                "nutrient_deficiencies": record.nutrient_deficiencies,
+                "recommended_foods": record.recommended_foods,
+                "supplements": record.supplements,
+                "created_at": record.created_at,
+            })
+
+        response_data = {
+            "child": {
+                "id": str(child.id),
+                "full_name": child.full_name,
+                "gender": child.gender,
+                "birth_date": child.birth_date,
+            },
+            "reports": reports,
         }
 
         return JsonResponse(response_data, status=status.HTTP_200_OK)

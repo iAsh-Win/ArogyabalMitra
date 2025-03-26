@@ -2,6 +2,8 @@ from django.urls import path
 from .viewsA import auth_views, anganwadi_views, child_views, utility_views, malnutrtion_views, supplement_views
 from .viewsB import auth_view, supplements_views
 from .viewsA.supplement_views import distribute_supplement
+from .viewsB.anganwadi_views import get_all_anganwadi_users
+from .viewsA.malnutrtion_views import get_child_reports, get_child_report
 
 urlpatterns = [
     path('logout/', auth_views.logout_user, name="logout_user"),
@@ -12,6 +14,7 @@ urlpatterns = [
     # 🔹 Anganwadi User Routes
     path('anganwadi/create', anganwadi_views.create_anganwadi_user, name="create_anganwadi_user"),
     path('anganwadi/users', anganwadi_views.get_anganwadi_users, name="get_anganwadi_users"),
+    path('anganwadi/all', get_all_anganwadi_users, name="get_all_anganwadi_users"),
 
     # 🔹 Child Management Routes
     path('anganwadi/children', child_views.get_children, name="get_children"),
@@ -24,7 +27,8 @@ urlpatterns = [
     path('anganwadi/getfood', utility_views.get_csvFoodNames, name="get_children_csv"),
 
     path('anganwadi/check_malnutrtion/<str:child_id>', malnutrtion_views.check_malnutrition, name='check_malnutrition'),
-    path('anganwadi/get_child_report/<str:child_id>', malnutrtion_views.get_child_report, name='get_child_report'),  # New API
+    path('anganwadi/get_child_report/<str:malnutrition_record_id>', get_child_report, name='get_child_report'),  # New API
+    path('anganwadi/get_child_reports/<str:child_id>', get_child_reports, name="get_child_reports"),
 
     path('head_officer/login', auth_view.login_head_officer, name="login_head_officer"),
 
@@ -42,5 +46,5 @@ urlpatterns = [
     path('anganwadi-supplements/assign', supplements_views.assign_supplements_to_anganwadi, name='assign_supplements_to_anganwadi'),
 
     # 🔹 Supplement Distribution Route
-    path('supplements/distribute', distribute_supplement, name='distribute_supplement'),
+    path('supplements/distribute/', distribute_supplement, name='distribute_supplement'),
 ]

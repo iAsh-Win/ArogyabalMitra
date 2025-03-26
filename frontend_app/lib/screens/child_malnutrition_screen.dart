@@ -169,12 +169,12 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
       "Clean_Water": _hasCleanWater,
       "Illness":
           _selectedIllnesses.contains('None')
-              ? ['None']
+              ? []
               : List<String>.from(_selectedIllnesses),
     };
 
     final requestData = {"food_intake": foodIntake, "child_data": childData};
-   
+
     final childId = widget.childData['id'];
     if (childId == null) {
       setState(() {
@@ -184,7 +184,6 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
     }
 
     final url = '${ApiConfig.check_mal}$childId';
-    print(url);
 
     try {
       final token = await _authService.getToken();
@@ -213,7 +212,6 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
       });
 
       if (response.statusCode == 200) {
-        print(response.body);
         final responseData = json.decode(response.body);
         Navigator.push(
           context,
@@ -222,7 +220,6 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
           ),
         );
       } else {
-        print(response.body);
         final errorMessage =
             json.decode(response.body)['message'] ?? 'An error occurred.';
         setState(() {

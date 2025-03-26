@@ -121,6 +121,7 @@ class Supplement(models.Model):
 
 # Anganwadi Supplement Model
 class AnganwadiSupplement(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)  # Add UUID primary key
     anganwadi_user = models.ForeignKey(AnganwadiUser, on_delete=models.CASCADE)  # Link to Anganwadi user
     supplement = models.ForeignKey(Supplement, on_delete=models.CASCADE)  # Link to the supplement
     quantity = models.PositiveIntegerField(default=0)  # Quantity of the supplement available
@@ -132,6 +133,7 @@ class AnganwadiSupplement(models.Model):
 
 
 class MalnutritionRecord(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)  # Add UUID primary key
     child = models.ForeignKey('Child', on_delete=models.CASCADE, related_name='malnutrition_records')
     weight = models.FloatField(null=True, blank=True)
     height = models.FloatField(null=True, blank=True)

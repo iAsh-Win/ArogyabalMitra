@@ -24,12 +24,26 @@ def assign_supplements_to_anganwadi(request):
             supplement = Supplement.objects.get(id=supplement_data["supplement_id"])
             quantity = supplement_data.get("quantity", 0)
 
-            # Create or update the supplement stock for the Anganwadi user
-            anganwadi_supplement, created = AnganwadiSupplement.objects.update_or_create(
+            # Check if the AnganwadiSupplement record already exists
+            anganwadi_supplement = AnganwadiSupplement.objects.filter(
                 anganwadi_user=anganwadi_user,
-                supplement=supplement,
-                defaults={"quantity": quantity}
-            )
+                supplement=supplement
+            ).first()
+
+            if anganwadi_supplement:
+                # Update the quantity if the record exists
+                anganwadi_supplement.quantity += quantity
+                anganwadi_supplement.save()
+                print(f"Updated existing supplement: {anganwadi_supplement}")
+            else:
+                # Create a new record if it doesn't exist
+                anganwadi_supplement = AnganwadiSupplement.objects.create(
+                    id=uuid.uuid4(),  # Explicitly set the UUID for the new record
+                    anganwadi_user=anganwadi_user,
+                    supplement=supplement,
+                    quantity=quantity
+                )
+                print(f"Created new supplement: {anganwadi_supplement}")
 
             assigned_supplements.append({
                 "supplement_id": str(supplement.id),
@@ -45,5 +59,7 @@ def assign_supplements_to_anganwadi(request):
 
     except Supplement.DoesNotExist:
         return Response({"message": "One or more supplements not found"}, status=status.HTTP_404_NOT_FOUND)
+    except AnganwadiUser.DoesNotExist:
+        return Response({"message": "Anganwadi user not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
