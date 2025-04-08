@@ -167,10 +167,8 @@ def check_malnutrition(request, child_id):
                     ),
                 },
             }
-            print(data)
             # Call the generate_recommendation function
             recommendations = generate_recommendation(data)
-            print(recommendations)
             if recommendations["status"] != "success":
                 raise Exception(recommendations["message"])
 
