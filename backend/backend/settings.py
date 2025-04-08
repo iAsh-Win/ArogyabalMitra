@@ -14,6 +14,15 @@ import django_mongodb_backend
 
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Secret Key Access
+HF_API_KEY = os.getenv('HF_API_KEY')
+
 
 # REST_FRAMEWORK = {
 #     'DEFAULT_AUTHENTICATION_CLASSES': (

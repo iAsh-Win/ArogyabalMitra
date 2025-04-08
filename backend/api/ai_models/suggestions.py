@@ -7,7 +7,8 @@ import os
 from django.conf import settings
 
 API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
-HF_API_KEY = "***************************"
+HF_API_KEY = settings.HF_API_KEY
+
 headers = {"Authorization": f"Bearer {HF_API_KEY}"}
 
 csv_file_path = os.path.join(settings.BASE_DIR, 'api', 'data', 'mycsv.csv')
