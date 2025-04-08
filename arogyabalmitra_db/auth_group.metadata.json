@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"name":{"$numberInt":"1"}},"name":"auth_group_name_a6ea08ec_uniq","unique":true,"partialFilterExpression":{"name":{"$type":"string"}}}],"uuid":"1319dcbab3814822bef4492afd994265","collectionName":"auth_group","type":"collection"}

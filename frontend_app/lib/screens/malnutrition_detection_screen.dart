@@ -32,13 +32,11 @@ class _MalnutritionDetectionScreenState
   @override
   void initState() {
     super.initState();
-    // _filteredChildren = _children;
     _initializeAndFetchChildren();
   }
 
   Future<void> _initializeAndFetchChildren() async {
     _authService = await AuthService.create();
-    // _authService = await AuthService.create();
     await _fetchChildren();
   }
 
@@ -61,10 +59,11 @@ class _MalnutritionDetectionScreenState
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          _children = List<Map<String, dynamic>>.from(data['children']);
-          _filteredChildren = List<Map<String, dynamic>>.from(
-            _children,
-          ); // Initialize filtered list
+          _children =
+              (data['children'] as List)
+                  .map((child) => child as Map<String, dynamic>)
+                  .toList();
+          _filteredChildren = List<Map<String, dynamic>>.from(_children);
           _isLoading = false;
         });
       } else {
@@ -81,6 +80,19 @@ class _MalnutritionDetectionScreenState
     }
   }
 
+  void _filterChildren(String query) {
+    setState(() {
+      _filteredChildren =
+          _children
+              .where(
+                (child) => (child['full_name']?.toString().toLowerCase() ?? '')
+                    .contains(query.toLowerCase()),
+              )
+              .toList()
+              .cast<Map<String, dynamic>>(); // Ensure proper casting
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,6 +103,7 @@ class _MalnutritionDetectionScreenState
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               controller: _searchController,
+              onChanged: _filterChildren, // Call the filter function on input
               decoration: InputDecoration(
                 hintText: 'Search children...',
                 prefixIcon: const Icon(Icons.search),
@@ -98,21 +111,6 @@ class _MalnutritionDetectionScreenState
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              onChanged: (value) {
-                // setState(() {
-                //   _filteredChildren =
-                //       _children
-                //           .where(
-                //             (child) =>
-                //                 child['full_name'] != null &&
-                //                 child['full_name']
-                //                     .toString()
-                //                     .toLowerCase()
-                //                     .contains(value.toLowerCase()),
-                //           )
-                //           .toList();
-                // });
-              },
             ),
           ),
           Expanded(

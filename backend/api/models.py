@@ -192,3 +192,14 @@ class SupplementRequest(models.Model):
 
     def __str__(self):
         return f"Request by {self.anganwadi_user.full_name} on {self.request_date}"
+
+
+class Program(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)  # Unique ID for the program
+    title = models.CharField(max_length=255)  # Title of the program
+    description = models.TextField()  # Description of the program
+    date = models.DateField()  # Date of the program
+    created_by = models.ForeignKey(HeadOfficer, on_delete=models.CASCADE)  # Link to the head officer who created it
+
+    def __str__(self):
+        return f"{self.title} ({self.date})"

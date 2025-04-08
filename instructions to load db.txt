@@ -1,0 +1,63 @@
+
+### **Importing MongoDB Data Using `mongorestore`**
+
+When you want to **restore** a MongoDB database from a dump created using `mongodump`, you can use the `mongorestore` tool. This tool imports the data into your MongoDB instance.
+
+#### **Steps to Import MongoDB Data:**
+
+1. **Ensure MongoDB Database Tools Are Installed:**
+
+   - You need the **MongoDB Database Tools** (which include `mongorestore`) installed on your system.
+   - If you haven’t installed them yet, download and install the [MongoDB Database Tools](https://www.mongodb.com/try/download/database-tools).
+
+2. **Locate Your Dump Folder:**
+
+   - Ensure you know the location where your MongoDB dump is stored. 
+   - For example, if you used the `mongodump` command with `--out="C:/mongoDBS"`, you should have a folder named `arogyabalmitra_db` inside `C:/mongoDBS`.
+
+3. **Open Command Prompt or PowerShell:**
+
+   - Press `Windows + R`, type `cmd` (for Command Prompt) or `powershell`, and hit Enter.
+
+4. **Use `mongorestore` to Import the Data:**
+
+   The basic syntax for `mongorestore` is as follows:
+
+   ```bash
+   mongorestore --uri="mongodb://localhost:27017" --db=<target_db_name> <path_to_dump_folder>
+   ```
+
+   - **`--uri="mongodb://localhost:27017"`**: This specifies the URI of your MongoDB instance. Adjust the hostname and port if needed.
+   - **`--db=<target_db_name>`**: This specifies the name of the database to restore to. If you want to restore to a new database, change the `<target_db_name>` to the desired name.
+   - **`<path_to_dump_folder>`**: This is the location where the backup (`mongodump`) files are stored.
+
+   #### **Example:**
+   Assuming you have a dump folder named `arogyabalmitra_db` located at `C:/mongoDBS/`, and you want to restore it to the same database (`arogyabalmitra_db`), you would use this command:
+
+   ```bash
+   mongorestore --uri="mongodb://localhost:27017" --db=arogyabalmitra_db "C:/mongoDBS/arogyabalmitra_db"
+   ```
+
+   This will restore the data to the `arogyabalmitra_db` database.
+
+5. **Optional: Additional `mongorestore` Options**
+
+   - **`--drop`**: This option drops the target database or collection before restoring the data.
+     ```bash
+     mongorestore --uri="mongodb://localhost:27017" --db=arogyabalmitra_db --drop "C:/mongoDBS/arogyabalmitra_db"
+     ```
+   - **`--gzip`**: If your dump files were compressed with gzip, you can specify this option to restore them.
+     ```bash
+     mongorestore --uri="mongodb://localhost:27017" --db=arogyabalmitra_db --gzip "C:/mongoDBS/arogyabalmitra_db"
+     ```
+
+6. **Verify the Import:**
+
+   - After running the `mongorestore` command, you can verify that the data has been restored by connecting to your MongoDB instance using `mongosh` or `mongo`:
+     ```bash
+     mongosh
+     use arogyabalmitra_db
+     show collections
+     ```
+
+---

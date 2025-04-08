@@ -356,6 +356,18 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
+              onChanged: (value) {
+                final height = double.tryParse(value);
+                if (height != null && height > 120) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Height cannot exceed 120 cm for till 5 year child'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  _heightController.clear();
+                }
+              },
             ),
             const SizedBox(height: 16),
             TextField(

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import PageTitle from '@/components/common/PageTitle';
 import DashboardCard from '@/components/dashboard/DashboardCard';
@@ -9,6 +9,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
+import { baseUrl } from '@/config/api';
+import config from '@/config/api';
+
 
 // Mock data
 const supplements = [
@@ -158,11 +161,150 @@ const pendingRequests = [
   }
 ];
 
+// Types for API response
+interface Supplement {
+  id: string;
+  name: string;
+  quantity: number;
+}
+
+interface AnganwadiUser {
+  id: string;
+  full_name: string;
+  center_name: string;
+  village: string;
+  district: string;
+  state: string;
+}
+
+interface SupplementRequest {
+  id: string;
+  anganwadi_user: AnganwadiUser;
+  supplements: Supplement[];
+  request_date: string;
+  status: string;
+}
+
+interface ApiResponse {
+  supplement_requests: SupplementRequest[];
+}
+
 const Inventory = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedRequest, setSelectedRequest] = useState<(typeof pendingRequests)[0] | null>(null);
-  
+  const [pendingRequests, setPendingRequests] = useState<SupplementRequest[]>([]);
+  const [approvedRequests, setApprovedRequests] = useState<SupplementRequest[]>([]);
+  const [rejectedRequests, setRejectedRequests] = useState<SupplementRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<SupplementRequest | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPendingRequests();
+    // Load rejected requests from localStorage
+    const savedRejectedRequests = localStorage.getItem('rejectedRequests');
+    if (savedRejectedRequests) {
+      setRejectedRequests(JSON.parse(savedRejectedRequests));
+    }
+  }, []);
+
+  const fetchPendingRequests = async () => {
+    try {
+      const response = await fetch(`${config.baseUrl}${config.endpoints.inventory.supplements}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data: ApiResponse = await response.json();
+      // Filter out rejected requests from the pending requests
+      const pendingOnly = data.supplement_requests.filter(request => request.status !== 'rejected');
+      setPendingRequests(pendingOnly);
+    } catch (error) {
+      console.error('Error fetching supplement requests:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to fetch pending requests',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRequestAction = async (id: string, action: 'approve' | 'reject') => {
+    try {
+      const endpoint = action === 'approve' ? 
+        `${config.baseUrl}supplements/approve_request` :
+        `${config.baseUrl}supplements/reject_request`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          supplement_request_id: id
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.message || `Failed to ${action} request: ${response.status} ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
+
+      const updatedRequest = await response.json();
+      
+      // Remove the request from pending list
+      setPendingRequests(prev => prev.filter(req => req.id !== id));
+      
+      // Update the respective lists based on action
+      if (action === 'approve') {
+        setApprovedRequests(prev => [...prev, updatedRequest]);
+        toast({
+          title: 'Request Approved',
+          description: `Request #${id} has been approved.`,
+          variant: 'default',
+        });
+      } else {
+        // Find the request in pending list before removing it
+        const rejectedRequest = pendingRequests.find(req => req.id === id);
+        if (rejectedRequest) {
+          const updatedRejectedRequests = [...rejectedRequests, { ...rejectedRequest, status: 'rejected' }];
+          setRejectedRequests(updatedRejectedRequests);
+          // Save rejected requests to localStorage
+          localStorage.setItem('rejectedRequests', JSON.stringify(updatedRejectedRequests));
+        }
+        toast({
+          title: 'Request Rejected',
+          description: `Request #${id} has been rejected successfully.`,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} request:`, error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : `Failed to ${action} request`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
   const getStockColor = (status: string) => {
     switch (status) {
       case 'critical':
@@ -175,7 +317,7 @@ const Inventory = () => {
         return 'bg-gray-500';
     }
   };
-  
+
   const getStockBgColor = (status: string) => {
     switch (status) {
       case 'critical':
@@ -226,15 +368,6 @@ const Inventory = () => {
     }
   };
 
-  const handleRequestAction = (id: number, action: 'approve' | 'reject') => {
-    toast({
-      title: `Request ${action === 'approve' ? 'Approved' : 'Rejected'}`,
-      description: `Request #${id} has been ${action === 'approve' ? 'approved' : 'rejected'}.`,
-      variant: action === 'approve' ? 'default' : 'destructive',
-    });
-    setSelectedRequest(null);
-  };
-
   const handleRequestSelect = (request: (typeof pendingRequests)[0]) => {
     setSelectedRequest(request);
   };
@@ -255,6 +388,8 @@ const Inventory = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="requests">Pending Requests</TabsTrigger>
+          <TabsTrigger value="approved">Approved Requests</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected Requests</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview">
@@ -364,109 +499,279 @@ const Inventory = () => {
             </DashboardCard>
           </div>
         </TabsContent>
+
+        
+
+        
         
         <TabsContent value="requests">
           <div className="grid grid-cols-1 gap-6 mb-6">
             <DashboardCard title="Pending Supplement Requests" subtitle="Awaiting review and approval">
+
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Request ID</TableHead>
                       <TableHead>Center</TableHead>
+                      <TableHead>Anganwadi Worker</TableHead>
+                      <TableHead>Supplements</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendingRequests.map((item) => (
-                      <TableRow 
-                        key={item.id} 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleRequestSelect(item)}
-                      >
-                        <TableCell className="font-medium">#{item.id}</TableCell>
-                        <TableCell>{item.center}</TableCell>
-                        <TableCell>{item.requestDate}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 bg-green-100 text-green-700 hover:bg-green-200"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRequestAction(item.id, 'approve');
-                              }}
-                            >
-                              Approve
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 bg-red-100 text-red-700 hover:bg-red-200"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRequestAction(item.id, 'reject');
-                              }}
-                            >
-                              Reject
-                            </Button>
-                          </div>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-4">
+                          Loading requests...
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : pendingRequests.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-4">
+                          No pending requests found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      pendingRequests.map((request) => (
+                        <TableRow 
+                          key={request.id} 
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setSelectedRequest(request)}
+                        >
+                          <TableCell className="font-medium">{request.id.slice(0, 8)}</TableCell>
+                          <TableCell>{request.anganwadi_user.center_name}</TableCell>
+                          <TableCell>{request.anganwadi_user.full_name}</TableCell>
+                          <TableCell>
+                            <ul className="list-disc list-inside">
+                              {request.supplements.map((supplement) => (
+                                <li key={supplement.id}>{supplement.name} ({supplement.quantity})</li>
+                              ))}
+                            </ul>
+                          </TableCell>
+                          <TableCell>{formatDate(request.request_date)}</TableCell>
+                          <TableCell>
+                            <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full">
+                              {request.status}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 bg-green-100 text-green-700 hover:bg-green-200"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRequestAction(request.id, 'approve');
+                                }}
+                              >
+                                Approve
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 bg-red-100 text-red-700 hover:bg-red-200"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRequestAction(request.id, 'reject');
+                                }}
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
             </DashboardCard>
           </div>
         </TabsContent>
+
+        <TabsContent value="approved">
+          <div className="grid grid-cols-1 gap-6 mb-6">
+            <DashboardCard title="Approved Requests" subtitle="Previously approved supplement requests">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Request ID</TableHead>
+                      <TableHead>Center</TableHead>
+                      <TableHead>Anganwadi Worker</TableHead>
+                      <TableHead>Supplements</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {approvedRequests.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-4">
+                          No approved requests found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      approvedRequests.map((request) => (
+                        <TableRow 
+                          key={request.id} 
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setSelectedRequest(request)}
+                        >
+                          <TableCell className="font-medium">{request.id.slice(0, 8)}</TableCell>
+                          <TableCell>{request.anganwadi_user.center_name}</TableCell>
+                          <TableCell>{request.anganwadi_user.full_name}</TableCell>
+                          <TableCell>
+                            <ul className="list-disc list-inside">
+                              {request.supplements.map((supplement) => (
+                                <li key={supplement.id}>{supplement.name} ({supplement.quantity})</li>
+                              ))}
+                            </ul>
+                          </TableCell>
+                          <TableCell>{formatDate(request.request_date)}</TableCell>
+                          <TableCell>
+                            <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">
+                              Approved
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </DashboardCard>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="rejected">
+          <div className="grid grid-cols-1 gap-6 mb-6">
+            <DashboardCard title="Rejected Requests" subtitle="Previously rejected supplement requests">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Request ID</TableHead>
+                      <TableHead>Center</TableHead>
+                      <TableHead>Anganwadi Worker</TableHead>
+                      <TableHead>Supplements</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rejectedRequests.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-4">
+                          No rejected requests found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      rejectedRequests.map((request) => (
+                        <TableRow 
+                          key={request.id} 
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setSelectedRequest(request)}
+                        >
+                          <TableCell className="font-medium">{request.id.slice(0, 8)}</TableCell>
+                          <TableCell>{request.anganwadi_user.center_name}</TableCell>
+                          <TableCell>{request.anganwadi_user.full_name}</TableCell>
+                          <TableCell>
+                            <ul className="list-disc list-inside">
+                              {request.supplements.map((supplement) => (
+                                <li key={supplement.id}>{supplement.name} ({supplement.quantity})</li>
+                              ))}
+                            </ul>
+                          </TableCell>
+                          <TableCell>{formatDate(request.request_date)}</TableCell>
+                          <TableCell>
+                            <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
+                              Rejected
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </DashboardCard>
+          </div>
+        </TabsContent>
+
+        
       </Tabs>
       
       {/* Request Details Dialog */}
       <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Request Details - #{selectedRequest?.id}</DialogTitle>
+            <DialogTitle>Request Details - {selectedRequest?.id.slice(0, 8)}</DialogTitle>
           </DialogHeader>
           
           <div className="py-4">
             <div className="grid gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium">Center</p>
-                  <p className="text-sm text-muted-foreground">{selectedRequest?.center}</p>
+              <Card className="p-4">
+                <h3 className="text-sm font-medium mb-3">Anganwadi Center Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium">Worker Name</p>
+                    <p className="text-sm text-muted-foreground">{selectedRequest?.anganwadi_user.full_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Center Name</p>
+                    <p className="text-sm text-muted-foreground">{selectedRequest?.anganwadi_user.center_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Village</p>
+                    <p className="text-sm text-muted-foreground">{selectedRequest?.anganwadi_user.village}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">District</p>
+                    <p className="text-sm text-muted-foreground">{selectedRequest?.anganwadi_user.district}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Date Requested</p>
-                  <p className="text-sm text-muted-foreground">{selectedRequest?.requestDate}</p>
-                </div>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium mb-2">Urgency</p>
-                {selectedRequest && getUrgencyBadge(selectedRequest.urgency)}
-              </div>
+              </Card>
               
               <Card className="p-4">
-                <h3 className="text-sm font-medium mb-3">Requested Medicines</h3>
+                <h3 className="text-sm font-medium mb-3">Request Details</h3>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p className="text-sm font-medium">Request Date</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedRequest && formatDate(selectedRequest.request_date)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Status</p>
+                    <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full">
+                      {selectedRequest?.status}
+                    </span>
+                  </div>
+                </div>
+                
+                <h3 className="text-sm font-medium mb-3">Requested Supplements</h3>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Medicine</TableHead>
+                      <TableHead>Supplement Name</TableHead>
                       <TableHead>Quantity</TableHead>
-                      <TableHead>Unit</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedRequest?.medicines.map((medicine, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{medicine.name}</TableCell>
-                        <TableCell>{medicine.quantity}</TableCell>
-                        <TableCell>{medicine.unit}</TableCell>
-                      </TableRow>
-                    ))}
+                    {selectedRequest?.supplements.map((supplement) => {
+                      const supplementInfo = supplements.find(s => s.id.toString() === supplement.id);
+                      return (
+                        <TableRow key={supplement.id}>
+                          <TableCell className="font-medium">{supplement.name}</TableCell>
+                          <TableCell>{supplement.quantity}</TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </Card>

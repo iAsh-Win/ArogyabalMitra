@@ -104,7 +104,6 @@ def check_malnutrition(request, child_id):
             encoder_path=encoder_path,
             columns_path=columns_path,
         )
-
         # Check if the result indicates success
         if result["status"] == "success":
             # Convert all numpy types and bools in the result to JSON-compatible types
@@ -168,9 +167,10 @@ def check_malnutrition(request, child_id):
                     ),
                 },
             }
+            print(data)
             # Call the generate_recommendation function
             recommendations = generate_recommendation(data)
-
+            print(recommendations)
             if recommendations["status"] != "success":
                 raise Exception(recommendations["message"])
 

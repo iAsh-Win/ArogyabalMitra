@@ -137,6 +137,32 @@ class _ChildrenListScreenState extends State<ChildrenListScreen> {
     }
   }
 
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Severe Malnutrition':
+        return const Color.fromARGB(255, 254, 207, 207);
+      case 'Moderate Malnutrition':
+        return const Color.fromARGB(255, 255, 215, 174);
+      case 'No Malnutrition':
+        return const Color.fromARGB(255, 179, 255, 183);
+      default:
+        return Colors.grey.shade200;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'Severe Malnutrition':
+        return Icons.warning;
+      case 'Moderate Malnutrition':
+        return Icons.warning_amber;
+      case 'No Malnutrition':
+        return Icons.check_circle;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -167,22 +193,44 @@ class _ChildrenListScreenState extends State<ChildrenListScreen> {
                       itemCount: _filteredChildren.length,
                       itemBuilder: (context, index) {
                         final child = _filteredChildren[index];
+                        final status =
+                            child['latest_malnutrition_status'] ?? 'Unknown';
                         return Card(
+                          key: ValueKey(
+                            child['id'],
+                          ), // Ensure consistent rendering
+                          color: _getStatusColor(status),
                           margin: const EdgeInsets.symmetric(
                             horizontal: 16.0,
                             vertical: 8.0,
                           ),
                           child: ListTile(
-                            leading: CircleAvatar(
-                              child: Text(child['full_name'][0]),
+                            leading: Icon(
+                              _getStatusIcon(status),
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                             title: Text(child['full_name']),
-                            subtitle: Text(
-                              'Date of Birth: ${child['birth_date']} • Gender: ${child['gender']}',
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Date of Birth: ${child['birth_date']}'),
+                                Text('Gender: ${child['gender']}'),
+                                Text(
+                                  'Status: $status',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: _getStatusColor(
+                                      status,
+                                    ).withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
                             ),
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () {
-                              _fetchAndNavigateToReports(child['id']);
+                              _fetchAndNavigateToReports(
+                                child['id'],
+                              ); // Removed `await`
                             },
                           ),
                         );

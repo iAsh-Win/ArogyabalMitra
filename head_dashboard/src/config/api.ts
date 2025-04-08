@@ -20,6 +20,8 @@ interface ApiConfig {
     inventory: {
       list: string;
       details: string;
+      supplements: string;
+      supplements_reject: string;
     };
   };
 }
@@ -45,7 +47,9 @@ const development: ApiConfig = {
     },
     inventory: {
       list: import.meta.env.VITE_INVENTORY_LIST,
-      details: import.meta.env.VITE_INVENTORY_DETAILS
+      details: import.meta.env.VITE_INVENTORY_DETAILS,
+      supplements: import.meta.env.VITE_SUPPLEMENT_REQUESTS,
+      supplements_reject: import.meta.env.VITE_SUPPLEMENT_REJECT
     }
   }
 };
@@ -71,7 +75,9 @@ const production: ApiConfig = {
     },
     inventory: {
       list: import.meta.env.VITE_INVENTORY_LIST,
-      details: import.meta.env.VITE_INVENTORY_DETAILS
+      details: import.meta.env.VITE_INVENTORY_DETAILS,
+      supplements: import.meta.env.VITE_SUPPLEMENT_REQUESTS,
+      supplements_reject: import.meta.env.VITE_SUPPLEMENT_REJECT
     }
   }
 };
@@ -83,3 +89,4 @@ export default config;
 // Export base URLs separately for direct access
 export const baseUrl = config.baseUrl;
 export const apiBaseUrl = config.baseUrl;
+      supplements_reject: import.meta.env.VITE_SUPPLEMENT_REJECT

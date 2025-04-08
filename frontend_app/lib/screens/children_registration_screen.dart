@@ -9,10 +9,12 @@ class ChildrenRegistrationScreen extends StatefulWidget {
   const ChildrenRegistrationScreen({super.key});
 
   @override
-  State<ChildrenRegistrationScreen> createState() => _ChildrenRegistrationScreenState();
+  State<ChildrenRegistrationScreen> createState() =>
+      _ChildrenRegistrationScreenState();
 }
 
-class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen> {
+class _ChildrenRegistrationScreenState
+    extends State<ChildrenRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   late final AuthService _authService;
   bool _isLoading = false;
@@ -36,8 +38,7 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
   @override
   void initState() {
     super.initState();
-     _initializeAndCheckAuth();
-
+    _initializeAndCheckAuth();
   }
 
   Future<void> _initializeAndCheckAuth() async {
@@ -64,7 +65,6 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
     print('Token: $token');
   }
 
-
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -82,15 +82,25 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+    final DateTime today = DateTime.now();
+    final DateTime fiveYearsAgo = today.subtract(const Duration(days: 5 * 365));
+
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      initialDate: today, // Default to today
+      firstDate:
+          fiveYearsAgo, // Earliest selectable date (5 years ago from today)
+      lastDate: today, // Latest selectable date (today)
+      selectableDayPredicate: (DateTime date) {
+        // Only allow dates between fiveYearsAgo and today
+        return date.isAfter(fiveYearsAgo.subtract(const Duration(days: 1))) &&
+            date.isBefore(today.add(const Duration(days: 1)));
+      },
     );
-    if (picked != null && picked != _selectedDate) {
+
+    if (pickedDate != null) {
       setState(() {
-        _selectedDate = picked;
+        _selectedDate = pickedDate;
       });
     }
   }
@@ -105,9 +115,9 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
       }
 
       if (_selectedGender == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select gender')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Please select gender')));
         return;
       }
 
@@ -159,9 +169,9 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
         }
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       } finally {
         if (mounted) {
           setState(() {
@@ -175,9 +185,7 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Child Registration'),
-      ),
+      appBar: AppBar(title: const Text('Child Registration')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -255,7 +263,7 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
                 },
               ),
               const SizedBox(height: 16),
-               TextFormField(
+              TextFormField(
                 controller: _societyNameController,
                 decoration: const InputDecoration(
                   labelText: 'Society Name',
@@ -268,7 +276,7 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
                   return null;
                 },
               ),
-             
+
               const SizedBox(height: 16),
               TextFormField(
                 controller: _villageController,
@@ -283,7 +291,7 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
                   return null;
                 },
               ),
-             
+
               const SizedBox(height: 16),
               TextFormField(
                 controller: _districtController,
@@ -400,13 +408,14 @@ class _ChildrenRegistrationScreenState extends State<ChildrenRegistrationScreen>
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Register Child'),
+                child:
+                    _isLoading
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Text('Register Child'),
               ),
             ],
           ),
