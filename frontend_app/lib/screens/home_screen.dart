@@ -18,7 +18,9 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _iconScaleAnimation;
   int _todayRegistered = 0;
   late final AuthService _authService;
   Map<String, dynamic> _homeData = {};
@@ -27,7 +29,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _iconScaleAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.elasticOut,
+    ));
     _initializeAndFetchHomeData();
+    _animationController.forward();
   }
 
   Future<void> _initializeAndFetchHomeData() async {
@@ -73,6 +87,12 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       print('Error fetching home data: $e');
     }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -346,25 +366,64 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Color _getStatusColor(String title) {
+    switch (title) {
+      case 'Normal':
+        return Colors.green;
+      case 'Moderate Malnutrition':
+        return Colors.orange;
+      case 'Severe Malnutrition':
+        return Colors.red;
+      default:
+        return Theme.of(context).colorScheme.primary;
+    }
+  }
+
   Widget _buildStatCard(
     BuildContext context,
     String title,
     String value,
     IconData icon,
   ) {
-    return Column(
-      children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 32),
-        const SizedBox(height: 8), // Ensure this is meaningful
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.primary,
+    final color = _getStatusColor(title);
+    return Container(
+      decoration: BoxDecoration(
+        gradient: title == 'Normal' || title == 'Moderate Malnutrition' || title == 'Severe Malnutrition'
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  color.withOpacity(0.1),
+                  color.withOpacity(0.2),
+                ],
+              )
+            : null,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ScaleTransition(
+            scale: _iconScaleAnimation,
+            child: Icon(icon, color: color, size: 32),
           ),
-        ),
-        Text(title, style: Theme.of(context).textTheme.bodySmall),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: color.withOpacity(0.8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 

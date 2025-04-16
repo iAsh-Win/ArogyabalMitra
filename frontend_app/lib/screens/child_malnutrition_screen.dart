@@ -174,7 +174,7 @@ class _ChildMalnutritionScreenState extends State<ChildMalnutritionScreen> {
     };
 
     final requestData = {"food_intake": foodIntake, "child_data": childData};
-
+print(requestData);
     final childId = widget.childData['id'];
     if (childId == null) {
       setState(() {

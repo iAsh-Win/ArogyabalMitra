@@ -9,7 +9,8 @@ import {
   MapPin, 
   Package, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  Calendar
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -20,6 +21,7 @@ const Sidebar: React.FC = () => {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Centers', href: '/centers', icon: MapPin },
     { name: 'Children', href: '/children', icon: Users },
+    { name: 'Programs', href: '/programs', icon: Calendar },
     { name: 'Inventory', href: '/inventory', icon: Package },
   ];
 

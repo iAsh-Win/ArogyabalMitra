@@ -13,6 +13,8 @@ import Inventory from "./pages/Inventory";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ChildDetails from "./pages/ChildDetails";
+import Programs from "./pages/Programs";
 
 const queryClient = new QueryClient();
 
@@ -29,8 +31,10 @@ const App = () => {
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/centers" element={<ProtectedRoute><Centers /></ProtectedRoute>} />
               <Route path="/children" element={<ProtectedRoute><Children /></ProtectedRoute>} />
+              <Route path="/children/child/:id" element={<ProtectedRoute><ChildDetails /></ProtectedRoute>} />
               <Route path="/nutrition" element={<ProtectedRoute><Nutrition /></ProtectedRoute>} />
               <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+              <Route path="/programs" element={<ProtectedRoute><Programs /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

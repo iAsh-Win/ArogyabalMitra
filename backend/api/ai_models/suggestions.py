@@ -6,7 +6,7 @@ from difflib import get_close_matches
 import os
 from django.conf import settings
 
-API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+API_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
 HF_API_KEY = settings.HF_API_KEY
 
 headers = {"Authorization": f"Bearer {HF_API_KEY}"}
@@ -140,6 +140,7 @@ def get_full_recommendation(malnutrition_data):
 def generate_recommendation(malnutrition_data):
     try:
         result = get_full_recommendation(malnutrition_data)
+        print(result)
         return {"status": "success", "data": result}
     except Exception as e:
         return {"status": "error", "message": str(e)}
